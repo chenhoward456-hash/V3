@@ -10,6 +10,8 @@ import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
 import { Lock, ChevronDown, ChevronUp, ChevronRight, Scale, Utensils, Pill, Smile, Dumbbell } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
+import HomeMetricStrip from '@/components/client/HomeMetricStrip'
+import homeStyles from './student-home.module.css'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import NewUserLanding, { shouldUseNewUserMode } from '@/components/client/NewUserLanding'
 import QuickActions from '@/components/client/QuickActions'
@@ -848,10 +850,10 @@ export default function ClientDashboard() {
 
   return (
     <ErrorBoundary>
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${view === 'home' ? homeStyles.home : ''}`}>
       {/* 法律同意 gate 已移至 app/c/[clientId]/layout.tsx（包住所有子頁，含血檢路由） */}
 
-      <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
+      <div className={`max-w-4xl mx-auto px-4 pt-6 pb-24 ${view === 'home' ? homeStyles.content : ''}`}>
 
         {/* 訂閱狀態 Banner */}
         {c.expires_at && (() => {
@@ -914,63 +916,8 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* 教練訊息置頂 — 點推播進來第一眼就看到全文（之前藏在「為你更新」中段看不到）*/}
-        {isToday && clientData.recentCoachMessage && (
-          <CoachMessageBanner msg={clientData.recentCoachMessage} clientCode={c.unique_code} />
-        )}
-
-        {/* 今日主線 — 首屏脊椎：一句判定 + 今天一個動作（吸收原「本週任務」判定，收斂多卡為一個聲音）*/}
-        {view === 'home' && isToday && (
-          <TodayHeadline
-            goalType={c.goal_type ?? null}
-            prepPhase={c.prep_phase || null}
-            competitionDate={c.competition_date || null}
-            isCompetition={isCompetition}
-            targetWeight={c.target_weight ?? null}
-            isTrainingDay={isTrainingDayResolved}
-            carbsTrainingDay={c.carbs_training_day ?? null}
-            carbsRestDay={c.carbs_rest_day ?? null}
-            carbsTarget={c.carbs_target ?? null}
-            weeklyTasks={c.weekly_tasks}
-            hasAttention={!!c.status && c.status !== 'normal'}
-            onOpenLab={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-            recentlyActive={overallStreak > 0}
-            engine={nutritionEngineSuggestion}
-          />
-        )}
-
-        {/* 首次來訪導覽 banner（dismissible）*/}
-        {view === 'home' && isToday && <WelcomeBanner clientId={clientId as string} isNew={isNewClient} />}
-
-        {/* 推播開通 — 已下移到行動/判決卡之後（開通推播=留存槓桿，但別佔掉第一屏；gated）*/}
-
-        {/* 核心邏輯一句話 — 暫藏 2026-06-12（去雜訊，常駐文案無資訊量；移除 false 即還原） */}
-        {false && isToday && (
-          <div className="mb-4 px-4 py-2.5 bg-zinc-50 border-l-2 border-emerald-500 rounded-r-lg">
-            <p className="text-[11px] text-gray-600 leading-relaxed">
-              <span className="text-[11px] uppercase tracking-wider font-bold text-emerald-700 mr-1.5">重點</span>
-              不是「算營養素」，是<b className="text-zinc-900">連續追蹤 + 累積對照</b>。連續打卡 14 天，趨勢才會說話。
-            </p>
-          </div>
-        )}
-
-        {/* 🔥 streak chip — 暫藏 2026-06-12（streak 已在 TodayOverviewCard 顯示，避免重複；移除 false 即還原） */}
-        {false && isToday && streakDays >= 3 && (
-          <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-200 rounded-full">
-            <span className="text-lg">🔥</span>
-            <div>
-              <span className="text-sm font-semibold text-orange-900">
-                連續 {streakDays} 天
-              </span>
-              <span className="text-xs text-orange-700 ml-2">
-                {streakMessage}
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* 標題區 */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
+        <div className={view === 'home' ? homeStyles.header : "bg-white border border-slate-200 rounded-2xl p-5 mb-6"}>
           <ClientHeader
             client={c}
             isCoachMode={isCoachMode}
@@ -1004,19 +951,45 @@ export default function ClientDashboard() {
           />
         </div>
 
-        {/* 🎯 今日教練指令 — 首頁最上面一句話：今天該幹嘛 + 還剩幾項沒打卡（打完變慶祝） */}
-        {/* 身體檔案定錨 — 擺在「今日重點」之上：先回答「你的身體目前告訴我們什麼」（目的），
-            再問「你今天要記什麼」（手段）。原本首頁只有後者，主從是顛倒的。 */}
-        {view === 'home' && isToday && (
-          <BodyProfileAnchor
-            data={c.body_profile}
-            onOpen={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-          />
+
+        {/* 教練訊息置頂 — 點推播進來第一眼就看到全文（之前藏在「為你更新」中段看不到）*/}
+        {isToday && clientData.recentCoachMessage && (
+          <CoachMessageBanner msg={clientData.recentCoachMessage} clientCode={c.unique_code} />
         )}
 
-        {/* 血檢進退一行摘要：V3 初衷在首頁要看得到，點了去健康分頁 */}
-        {view === 'home' && isToday && c.lab_enabled && (
-          <LongevityTeaser code={c.unique_code} onOpen={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
+        {/* 今日主線 — 首屏脊椎：一句判定 + 今天一個動作（吸收原「本週任務」判定，收斂多卡為一個聲音）*/}
+        {view === 'home' && isToday && (
+          <div className={homeStyles.hero}>
+            <HomeMetricStrip
+              weight={c.body_composition_enabled ? latestBodyData?.weight : null}
+              weightDate={c.body_composition_enabled ? latestByField.weight?.date : null}
+              carbs={c.nutrition_enabled ? (peakDayForSelected?.carbs ?? ((c.carbs_training_day && c.carbs_rest_day) ? (isTrainingDayResolved ? c.carbs_training_day : c.carbs_rest_day) : c.carbs_target)) : null}
+              showWeight={!!c.body_composition_enabled}
+              showCarbs={!!c.nutrition_enabled}
+              streak={overallStreak}
+              weights={(clientData.bodyData ?? EMPTY_ARRAY).filter((b) => b.weight != null).map((b) => ({ date: b.date, weight: Number(b.weight) }))}
+              today={today}
+              targetWeight={c.target_weight != null && Number.isFinite(Number(c.target_weight)) ? Number(c.target_weight) : null}
+            />
+            <TodayHeadline
+              hideVerdictNumbers={!!c.body_composition_enabled}
+              daysSinceLastWeight={latestByField.weight?.date ? Math.round((Date.parse(today) - Date.parse(latestByField.weight.date)) / 86400000) : null}
+              goalType={c.goal_type ?? null}
+              prepPhase={c.prep_phase || null}
+              competitionDate={c.competition_date || null}
+              isCompetition={isCompetition}
+              targetWeight={c.target_weight ?? null}
+              isTrainingDay={isTrainingDayResolved}
+              carbsTrainingDay={c.carbs_training_day ?? null}
+              carbsRestDay={c.carbs_rest_day ?? null}
+              carbsTarget={c.carbs_target ?? null}
+              weeklyTasks={c.weekly_tasks}
+              hasAttention={!!c.status && c.status !== 'normal'}
+              onOpenLab={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+              recentlyActive={overallStreak > 0}
+              engine={nutritionEngineSuggestion}
+            />
+          </div>
         )}
 
         {/* 今日重點：**體重是唯一的必做**，其餘全是加分。
@@ -1037,7 +1010,7 @@ export default function ClientDashboard() {
           ].filter(v => v !== null) as boolean[]
           const extrasDone = extras.filter(Boolean).length
           return (
-            <div className={`border rounded-2xl p-4 mb-3 ${weightDone ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
+            <div className="border border-slate-200 bg-white rounded-2xl p-4 mb-3">
               <p className="text-sm text-gray-700 leading-snug">
                 <span className="font-semibold text-gray-900">今天只有一件必做</span>
                 {' · '}
@@ -1053,168 +1026,6 @@ export default function ClientDashboard() {
             </div>
           )
         })()}
-
-        {/* 我的目標 —— 學員自己能改（目標＝他想要什麼；每天吃什麼＝處方，仍由教練設定）。
-            放進度分頁：他來看「我在贏嗎」的時候，正好是會想調目標的時機。 */}
-        {view === 'data' && isToday && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs text-slate-400 mb-0.5">我的目標</p>
-                <p className="text-sm text-gray-800 tabular-nums">
-                  {c.target_weight != null ? `${c.target_weight} kg` : '還沒設定'}
-                  {c.target_date && <span className="text-slate-400"> · {c.target_date}</span>}
-                </p>
-              </div>
-              <MyGoalEditor
-                clientCode={c.unique_code}
-                currentWeight={latestBodyData?.weight != null ? Number(latestBodyData.weight) : null}
-                targetWeight={c.target_weight != null ? Number(c.target_weight) : null}
-                targetDate={c.target_date ?? null}
-                onSaved={() => mutate()}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ===== INSIGHT: 每日洞察 + 完成進度（進「數據」分頁看） ===== */}
-          {view === 'data' && isToday && (
-            <SectionErrorBoundary name="today-overview">
-            <TodayOverviewCard
-              overallStreak={overallStreak}
-              todayCompletedItems={todayCompletedItems}
-              isCompetition={isCompetition}
-              targetWeight={c.target_weight}
-              competitionDate={c.competition_date || null}
-              prepPhase={c.prep_phase || null}
-              gender={c.gender ?? null}
-              latestBodyData={latestBodyData}
-              trainingLogs={clientData.trainingLogs ?? EMPTY_ARRAY}
-              wellness={clientData.wellness ?? EMPTY_ARRAY}
-              bodyData={clientData.bodyData ?? EMPTY_ARRAY}
-            />
-            </SectionErrorBoundary>
-          )}
-
-          {/* ===== 為你更新：精簡主動卡片（血檢趨勢 / 回檢 / macro 調整）===== */}
-          {view === 'home' && isToday && (
-            <SectionErrorBoundary name="for-you-feed">
-              <ForYouFeed
-                labs={c.lab_results ?? EMPTY_ARRAY}
-                gender={c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined}
-                nextCheckupDate={c.next_checkup_date}
-                macroAdjustment={clientData.recentMacroAdjustment ?? null}
-                clientCode={c.unique_code}
-                bodyData={clientData.bodyData ?? EMPTY_ARRAY}
-                targetWeight={c.target_weight}
-              />
-            </SectionErrorBoundary>
-          )}
-
-          {/* ===== 進步總覽 — 暫藏 2026-06-12（與 TodayOverviewCard 的現況/洞察重疊；要還原把下面整段註解打開即可） =====
-          {isToday && (
-            <SectionErrorBoundary name="progress-journey">
-              <ProgressJourney
-                bodyData={(clientData.bodyData || []).map((b: any) => ({ date: b.date, weight: b.weight, body_fat: b.body_fat }))}
-                wellness={(clientData.wellness || []).map((w: any) => ({ date: w.date, sleep_quality: w.sleep_quality, energy_level: w.energy_level, mood: w.mood }))}
-                nutritionLogs={(clientData.nutritionLogs || []).map((n: any) => ({ date: n.date, compliant: n.compliant, protein_grams: n.protein_grams }))}
-                trainingLogs={(clientData.trainingLogs || []).map((t: any) => ({ date: t.date, training_type: t.training_type }))}
-                bodyWeight={latestBodyData?.weight ?? c.target_weight ?? 70}
-                goalType={c.goal_type as string | null}
-                prepPhase={c.prep_phase as string | null}
-              />
-            </SectionErrorBoundary>
-          )}
-          ===== */}
-
-          {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
-          {view === 'home' && isCompetition && c.competition_date && (() => {
-            const daysLeft = daysUntilDateTW(c.competition_date)
-            // 比賽日當天(0)或之後(<0)，且還沒選擇下一步
-            const needsRecoveryPrompt = daysLeft <= 0 && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
-            if (!needsRecoveryPrompt) return null
-            return (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-4">
-                <div className="text-center mb-3">
-                  <h3 className="text-lg font-bold text-gray-900">比賽結束了！辛苦了！</h3>
-                  <p className="text-sm text-gray-500 mt-1">接下來你想怎麼做？</p>
-                </div>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => handlePrepPhaseChange('recovery')}
-                    disabled={updatingPhase}
-                    className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 text-left px-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="text-sm font-bold">進入賽後恢復期</p>
-                        <p className="text-xs font-normal opacity-80">熱量直接回到維持量 · 重訓不停</p>
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      const dateStr = prompt('下一場比賽日期（YYYY-MM-DD）')
-                      if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                        handleSetNextCompetition(dateStr)
-                      }
-                    }}
-                    disabled={updatingPhase}
-                    className="w-full bg-primary-600 text-white font-bold py-3 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 text-left px-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="text-sm font-bold">直接備下一場比賽</p>
-                        <p className="text-xs font-normal opacity-80">設定日期，系統自動開始備賽倒數</p>
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handlePrepPhaseChange('off_season')}
-                    disabled={updatingPhase}
-                    className="w-full bg-gray-100 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 text-sm"
-                  >
-                    先回到一般模式（增肌/減脂）
-                  </button>
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* 賽後恢復卡 — Recovery Diet（不是 reverse diet），數字來自 lib/recovery-diet.ts 引擎 */}
-          {view === 'home' && c.prep_phase === 'recovery' && (() => {
-            const s = nutritionEngineSuggestion
-            const daysPost = c.competition_date ? Math.max(0, -daysUntilDateTW(c.competition_date)) : 0
-            return (
-              <SectionErrorBoundary name="賽後恢復">
-                <PostCompetitionRecovery
-                  daysPostCompetition={daysPost}
-                  onSetNextCompetition={() => handlePrepPhaseChange('off_season')}
-                  recovery={
-                    s?.postCompetitionRecovery
-                      ? {
-                          phaseLabel: s.statusLabel?.split('·')[1]?.trim() ?? '',
-                          calories: s.suggestedCalories,
-                          protein: s.suggestedProtein,
-                          carbs: s.suggestedCarbs,
-                          fat: s.suggestedFat,
-                          maintenanceCalories: s.estimatedTDEE,
-                          regainRatePctPerWeek: s.weeklyWeightChangeRate,
-                          eaBreached: s.energyAvailability?.level === 'critical',
-                        }
-                      : null
-                  }
-                />
-              </SectionErrorBoundary>
-            )
-          })()}
-
-          {/* 新手引導 — 只有完全沒數據的新用戶才看到（營養設定移到 DO section 後） */}
-          {view === 'home' && !latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) && (
-            <div className="bg-primary-50 border border-primary-100 rounded-xl px-4 py-3">
-              <p className="text-sm text-primary-700 font-medium">歡迎！往下滑開始記錄你的第一筆數據</p>
-            </div>
-          )}
 
         {/* === QuickActions: 一鍵打卡（每天打開最常做的事，擺在判決卡前面，不用滑過 3 張卡才摸得到） === */}
         {view === 'home' && isToday && (() => {
@@ -1457,13 +1268,220 @@ export default function ClientDashboard() {
             )
           })()}
 
+        {/* 首次來訪導覽 banner（dismissible）*/}
+        {view === 'home' && isToday && <WelcomeBanner clientId={clientId as string} isNew={isNewClient} />}
+
+        {/* 推播開通 — 已下移到行動/判決卡之後（開通推播=留存槓桿，但別佔掉第一屏；gated）*/}
+
+        {/* 核心邏輯一句話 — 暫藏 2026-06-12（去雜訊，常駐文案無資訊量；移除 false 即還原） */}
+        {false && isToday && (
+          <div className="mb-4 px-4 py-2.5 bg-zinc-50 border-l-2 border-emerald-500 rounded-r-lg">
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              <span className="text-[11px] uppercase tracking-wider font-bold text-emerald-700 mr-1.5">重點</span>
+              不是「算營養素」，是<b className="text-zinc-900">連續追蹤 + 累積對照</b>。連續打卡 14 天，趨勢才會說話。
+            </p>
+          </div>
+        )}
+
+        {/* 🔥 streak chip — 暫藏 2026-06-12（streak 已在 TodayOverviewCard 顯示，避免重複；移除 false 即還原） */}
+        {false && isToday && streakDays >= 3 && (
+          <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-200 rounded-full">
+            <span className="text-lg">🔥</span>
+            <div>
+              <span className="text-sm font-semibold text-orange-900">
+                連續 {streakDays} 天
+              </span>
+              <span className="text-xs text-orange-700 ml-2">
+                {streakMessage}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* 🎯 今日教練指令 — 首頁最上面一句話：今天該幹嘛 + 還剩幾項沒打卡（打完變慶祝） */}
+        {/* 身體檔案定錨 — 擺在「今日重點」之上：先回答「你的身體目前告訴我們什麼」（目的），
+            再問「你今天要記什麼」（手段）。原本首頁只有後者，主從是顛倒的。 */}
+        {view === 'home' && isToday && (
+          <BodyProfileAnchor
+            data={c.body_profile}
+            onOpen={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+          />
+        )}
+
+        {/* 血檢進退一行摘要：V3 初衷在首頁要看得到，點了去健康分頁 */}
+        {view === 'home' && isToday && c.lab_enabled && (
+          <LongevityTeaser code={c.unique_code} onOpen={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
+        )}
+
+        {/* 我的目標 —— 學員自己能改（目標＝他想要什麼；每天吃什麼＝處方，仍由教練設定）。
+            放進度分頁：他來看「我在贏嗎」的時候，正好是會想調目標的時機。 */}
+        {view === 'data' && isToday && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-slate-400 mb-0.5">我的目標</p>
+                <p className="text-sm text-gray-800 tabular-nums">
+                  {c.target_weight != null ? `${c.target_weight} kg` : '還沒設定'}
+                  {c.target_date && <span className="text-slate-400"> · {c.target_date}</span>}
+                </p>
+              </div>
+              <MyGoalEditor
+                clientCode={c.unique_code}
+                currentWeight={latestBodyData?.weight != null ? Number(latestBodyData.weight) : null}
+                targetWeight={c.target_weight != null ? Number(c.target_weight) : null}
+                targetDate={c.target_date ?? null}
+                onSaved={() => mutate()}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ===== INSIGHT: 每日洞察 + 完成進度（進「數據」分頁看） ===== */}
+          {view === 'data' && isToday && (
+            <SectionErrorBoundary name="today-overview">
+            <TodayOverviewCard
+              overallStreak={overallStreak}
+              todayCompletedItems={todayCompletedItems}
+              isCompetition={isCompetition}
+              targetWeight={c.target_weight}
+              competitionDate={c.competition_date || null}
+              prepPhase={c.prep_phase || null}
+              gender={c.gender ?? null}
+              latestBodyData={latestBodyData}
+              trainingLogs={clientData.trainingLogs ?? EMPTY_ARRAY}
+              wellness={clientData.wellness ?? EMPTY_ARRAY}
+              bodyData={clientData.bodyData ?? EMPTY_ARRAY}
+            />
+            </SectionErrorBoundary>
+          )}
+
+          {/* ===== 為你更新：精簡主動卡片（血檢趨勢 / 回檢 / macro 調整）===== */}
+          {view === 'home' && isToday && (
+            <SectionErrorBoundary name="for-you-feed">
+              <ForYouFeed
+                labs={c.lab_results ?? EMPTY_ARRAY}
+                gender={c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined}
+                nextCheckupDate={c.next_checkup_date}
+                macroAdjustment={clientData.recentMacroAdjustment ?? null}
+                clientCode={c.unique_code}
+                bodyData={clientData.bodyData ?? EMPTY_ARRAY}
+                targetWeight={c.target_weight}
+              />
+            </SectionErrorBoundary>
+          )}
+
+          {/* ===== 進步總覽 — 暫藏 2026-06-12（與 TodayOverviewCard 的現況/洞察重疊；要還原把下面整段註解打開即可） =====
+          {isToday && (
+            <SectionErrorBoundary name="progress-journey">
+              <ProgressJourney
+                bodyData={(clientData.bodyData || []).map((b: any) => ({ date: b.date, weight: b.weight, body_fat: b.body_fat }))}
+                wellness={(clientData.wellness || []).map((w: any) => ({ date: w.date, sleep_quality: w.sleep_quality, energy_level: w.energy_level, mood: w.mood }))}
+                nutritionLogs={(clientData.nutritionLogs || []).map((n: any) => ({ date: n.date, compliant: n.compliant, protein_grams: n.protein_grams }))}
+                trainingLogs={(clientData.trainingLogs || []).map((t: any) => ({ date: t.date, training_type: t.training_type }))}
+                bodyWeight={latestBodyData?.weight ?? c.target_weight ?? 70}
+                goalType={c.goal_type as string | null}
+                prepPhase={c.prep_phase as string | null}
+              />
+            </SectionErrorBoundary>
+          )}
+          ===== */}
+
+          {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
+          {view === 'home' && isCompetition && c.competition_date && (() => {
+            const daysLeft = daysUntilDateTW(c.competition_date)
+            // 比賽日當天(0)或之後(<0)，且還沒選擇下一步
+            const needsRecoveryPrompt = daysLeft <= 0 && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
+            if (!needsRecoveryPrompt) return null
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-4">
+                <div className="text-center mb-3">
+                  <h3 className="text-lg font-bold text-gray-900">比賽結束了！辛苦了！</h3>
+                  <p className="text-sm text-gray-500 mt-1">接下來你想怎麼做？</p>
+                </div>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handlePrepPhaseChange('recovery')}
+                    disabled={updatingPhase}
+                    className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors disabled:opacity-50 text-left px-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="text-sm font-bold">進入賽後恢復期</p>
+                        <p className="text-xs font-normal opacity-80">熱量直接回到維持量 · 重訓不停</p>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const dateStr = prompt('下一場比賽日期（YYYY-MM-DD）')
+                      if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                        handleSetNextCompetition(dateStr)
+                      }
+                    }}
+                    disabled={updatingPhase}
+                    className="w-full bg-primary-600 text-white font-bold py-3 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 text-left px-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="text-sm font-bold">直接備下一場比賽</p>
+                        <p className="text-xs font-normal opacity-80">設定日期，系統自動開始備賽倒數</p>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handlePrepPhaseChange('off_season')}
+                    disabled={updatingPhase}
+                    className="w-full bg-gray-100 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 text-sm"
+                  >
+                    先回到一般模式（增肌/減脂）
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* 賽後恢復卡 — Recovery Diet（不是 reverse diet），數字來自 lib/recovery-diet.ts 引擎 */}
+          {view === 'home' && c.prep_phase === 'recovery' && (() => {
+            const s = nutritionEngineSuggestion
+            const daysPost = c.competition_date ? Math.max(0, -daysUntilDateTW(c.competition_date)) : 0
+            return (
+              <SectionErrorBoundary name="賽後恢復">
+                <PostCompetitionRecovery
+                  daysPostCompetition={daysPost}
+                  onSetNextCompetition={() => handlePrepPhaseChange('off_season')}
+                  recovery={
+                    s?.postCompetitionRecovery
+                      ? {
+                          phaseLabel: s.statusLabel?.split('·')[1]?.trim() ?? '',
+                          calories: s.suggestedCalories,
+                          protein: s.suggestedProtein,
+                          carbs: s.suggestedCarbs,
+                          fat: s.suggestedFat,
+                          maintenanceCalories: s.estimatedTDEE,
+                          regainRatePctPerWeek: s.weeklyWeightChangeRate,
+                          eaBreached: s.energyAvailability?.level === 'critical',
+                        }
+                      : null
+                  }
+                />
+              </SectionErrorBoundary>
+            )
+          })()}
+
+          {/* 新手引導 — 只有完全沒數據的新用戶才看到（營養設定移到 DO section 後） */}
+          {view === 'home' && !latestBodyData && (!clientData.nutritionLogs || clientData.nutritionLogs.length === 0) && (
+            <div className="bg-primary-50 border border-primary-100 rounded-xl px-4 py-3">
+              <p className="text-sm text-primary-700 font-medium">歡迎！往下滑開始記錄你的第一筆數據</p>
+            </div>
+          )}
+
         {/* 我的計畫 — 靜態參考（菜單/課表/補品/SOP）收合式，reference 層
             ⚠️ 2026-09-14：這張卡原本排在第 2 位（TodayHeadline 之後），實測 林宥任 的手機畫面：
             「今天只有一件必做 · 量早晨體重」落在第 1.0 個螢幕、體重輸入框在第 1.3 個螢幕 ——
             他每天打開就是要量體重，卻得先滑過 886px 才看得到指令、1094px 才碰得到框。
             這張卡自己的註解就寫「reference 層」：菜單/課表/SOP 是教練更新時才讀的東西，不是每天的動作。
             參考資料排在每日動作後面。（原本 QuickActions 上面那句「擺在判決卡前面」只搬了一半。） */}
-        {view === 'home' && isToday && <MyPlanSection data={c.onboarding_notes_rendered} />}
+        {view === 'home' && isToday && <MyPlanSection defaultCollapsed data={c.onboarding_notes_rendered} />}
 
         {/* === 「進度」分頁頭牌：你在贏嗎（作戰室 + 減脂體檢）—— 從首頁搬來，進度問句的單一去處 === */}
         {view === 'data' && (isCompetition || c.prep_phase === 'cut' || /cut|loss|fat|減/.test((c.goal_type || '').toLowerCase())) && (
@@ -2687,6 +2705,7 @@ export default function ClientDashboard() {
 
         return (
           <BottomNav
+            homeStyle={true}
             tabs={tabs}
             activeTab={view}
             completedMap={completedMap}

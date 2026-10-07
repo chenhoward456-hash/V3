@@ -133,6 +133,10 @@ export interface TodayHeadlineProps {
   engine?: EngineActionInput | null
   /** 點「有健康指標要留意」→ 切到健康分頁（血檢進退）。原本寫「往下看血檢」但首頁往下根本沒有血檢 */
   onOpenLab?: () => void
+  /** 上方已有體重主數字時，判定句不要再寫一次（週排程的舊數字會跟即時主數字對不上）*/
+  hideVerdictNumbers?: boolean
+  /** 最近一次量體重是幾天前（null＝不知道）*/
+  daysSinceLastWeight?: number | null
 }
 
 function TodayHeadlineInner({
@@ -150,8 +154,15 @@ function TodayHeadlineInner({
   onOpenLab,
   recentlyActive,
   engine,
+  hideVerdictNumbers,
+  daysSinceLastWeight,
 }: TodayHeadlineProps) {
-  const tasks = Array.isArray(weeklyTasks?.tasks) ? weeklyTasks!.tasks : []
+  // ⚠️ weekly_tasks 一週才產一次：「先補記錄」是在他斷的那幾天產的，他回來量了還要掛到下週
+  // （林宥任 2026-10：9/30–10/3 空窗時產生，10/5 起天天量，首頁照樣叫他「先補記錄」）
+  const rawTasks = Array.isArray(weeklyTasks?.tasks) ? weeklyTasks!.tasks : []
+  const tasks = daysSinceLastWeight != null && daysSinceLastWeight <= 2
+    ? rawTasks.filter(t => t.key !== 'record-gap')
+    : rawTasks
   const verdict = tasks[0] ?? null
   const extraTasks = tasks.slice(1)
 
@@ -198,13 +209,14 @@ function TodayHeadlineInner({
     : engineAction ?? [dayLabel, carbPart, doPart].filter(Boolean).join('，')
 
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+    <section className="home-headline bg-white border border-slate-200 rounded-2xl p-6 mb-4">
       {/* 目標 + 倒數 — 備賽客戶的階段/倒數由下方備賽倒數卡講（同屏不講兩次），這裡只補目標 */}
       {(() => {
         const chips = [
           // 備賽客戶的階段由下方備賽倒數卡講，同屏不講兩次
           !isCompetition && phaseLabel,
-          targetWeight != null && targetWeight !== '' && `目標 ${targetWeight}kg`,
+          // 上方主區塊已有「距目標」時不重複
+          !hideVerdictNumbers && targetWeight != null && targetWeight !== '' && `目標 ${targetWeight}kg`,
         ].filter(Boolean) as string[]
         if (chips.length === 0) return null
         return (
@@ -225,14 +237,17 @@ function TodayHeadlineInner({
                 ? (isPositive ? 'bg-emerald-500' : isNegative ? 'bg-amber-500' : 'bg-slate-300')
                 : startMode ? 'bg-primary-500' : 'bg-slate-300'
           }`} />
-          <p className={`text-base font-bold leading-snug ${
+          <p className={`text-[20px] font-semibold leading-[1.4] tracking-tight ${
             engineTitle
-              ? 'text-amber-700'
+              ? 'text-slate-900'
               : verdict
-                ? (isPositive ? 'text-emerald-700' : isNegative ? 'text-amber-700' : 'text-slate-900')
+                ? (isPositive ? 'text-slate-900' : isNegative ? 'text-slate-900' : 'text-slate-900')
                 : startMode ? 'text-primary-700' : 'text-slate-700'
           }`}>
-            {engineTitle ?? (verdict ? verdict.title : fallbackTitle)}
+            {(() => {
+              const t = engineTitle ?? (verdict ? verdict.title : fallbackTitle) ?? ''
+              return hideVerdictNumbers && /[：:].*\d/.test(t) ? t.split(/[：:]/)[0] : t
+            })()}
           </p>
         </div>
       )}
@@ -244,7 +259,7 @@ function TodayHeadlineInner({
           震宣回報「介面感覺更複雜了」，互相打架的指令比多一個按鈕更糟。
           必做的那件留給 QuickActions（它才是真的只有一件），這裡改成「訓練與飲食的重點」。 */}
       {actionText && (
-        <div className="rounded-xl bg-slate-50 px-3.5 py-3">
+        <div className="border-t border-slate-100 pt-4">
           <p className="text-sm text-slate-800 leading-relaxed">
             <span className="font-semibold text-slate-900">今天的重點：</span>
             {actionText}。
