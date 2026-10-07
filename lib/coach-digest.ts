@@ -16,7 +16,7 @@
 import { loadHypothesisUpdates, coachLine, type HypothesisUpdate } from '@/lib/hypothesis-updates'
 import { loadExperimentUpdates, coachExperimentLine, type ExperimentUpdate } from '@/lib/body-experiments'
 import { buildCoachingDrafts } from '@/lib/coaching-drafts'
-import { buildCoachWorkflow, type CoachWorkflowClient, type CoachWorkItem } from './coach-workflow'
+import { buildCoachWorkflow, isActionable, type CoachWorkflowClient, type CoachWorkItem } from './coach-workflow'
 
 /** 週一（台灣）才算：本週可發的訊息草稿，排除近 6 天已發過的、與這週幾乎沒資料的（最多 5 位） */
 async function loadMondayDrafts(supabase: QueryLike, today: string): Promise<{ name: string; headline: string; needsCoachReview: boolean }[]> {
@@ -125,7 +125,8 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
     for (const w of workflow.slice(0, 3)) {
       lines.push(`  • ${w.name}：${w.reason}`)
       lines.push(`    下一步：${w.action}`)
-      lines.push(`    ${w.reasons[0]?.kind === 'result' ? '資料日期' : '複核'}：${w.review.date ? `${w.review.date}｜${w.review.label}` : w.review.label}`)
+      // 沒有既有日期就不印這行：每人都掛一句「目前未設定」只是雜訊
+      if (w.review.date) lines.push(`    ${w.reasons[0]?.kind === 'result' ? '資料日期' : '複核'}：${w.review.date}｜${w.review.label}`)
       lines.push(`    ${adminUrl}${w.href}`)
     }
     if (workflow.length > 3) lines.push(`    其餘 ${workflow.length - 3} 位在後台同一份處理清單`)
@@ -297,8 +298,10 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
   if (weeklyDrafts.length > 0) leadBits.push(`${weeklyDrafts.length} 則週訊可以發`)
   if (experiments.length > 0) leadBits.unshift(`${experiments.length} 個實驗有結果`)
   if (hypotheses && hypotheses.graded.length > 0) leadBits.unshift(`${hypotheses.graded.length} 個預測對答案了`)
+  const actionableCount = workflow.filter(isActionable).length
   const lead =
-    workflow.length > 0 ? `${workflow.length} 位有關注事項，先看下面的處理順序`
+    actionableCount > 0 ? `${actionableCount} 位要處理，先看下面的順序`
+    : workflow.length > 0 ? '沒有要處理的人，只有近期結果可查看'
     : leadBits.length === 0 ? '沒人掉線，其餘看下面'
     : overdueLabs === 0 && proposals.length === 0 && experiments.length === 0 && weeklyDrafts.length === 0 && !(hypotheses && hypotheses.graded.length > 0) ? `${offline.length} 個人需要你出手`
     : `${leadBits.join('、')}，要你出手`

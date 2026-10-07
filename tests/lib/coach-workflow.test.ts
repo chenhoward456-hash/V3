@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCoachWorkflow, type CoachWorkflowClient } from '@/lib/coach-workflow'
+import { buildCoachWorkflow, isActionable, signalWorkReason, type CoachWorkflowClient } from '@/lib/coach-workflow'
 import { buildCoachDigest, loadCoachDigest, type CoachDigestInput } from '@/lib/coach-digest'
 import { loadHypothesisUpdates } from '@/lib/hypothesis-updates'
 import { loadExperimentUpdates } from '@/lib/body-experiments'
@@ -24,6 +24,25 @@ describe('shared coach workflow', () => {
     expect(buildCoachWorkflow(rows, today).map(r => r.clientId)).toEqual(['pain', 'lab', 'ask', 'offline'])
     expect(buildCoachWorkflow([...rows].reverse(), today).map(r => r.clientId)).toEqual(['pain', 'lab', 'ask', 'offline'])
     expect(buildCoachWorkflow([lab], today)[0].review.date).toBe('2026-10-01')
+  })
+  it('ranks an ongoing binge-compensate swing above a past gap the student already came back from', () => {
+    const binge = signalWorkReason({ kind: 'binge_compensate', sev: 2, text: '補償' } as never)!
+    const gap = signalWorkReason({ kind: 'log_gap', sev: 2, text: '空窗' } as never)!
+    expect(binge.priority).toBeGreaterThan(gap.priority)
+    expect(binge.action).not.toContain('他')
+  })
+  it('does not count result-only students as people to handle, and omits the review line when no date exists', () => {
+    const result = client('result'); result.reasons = [{ kind: 'result', priority: 20, reason: '睪固酮猜對', action: '可查看', review: { date: '2026-10-01', label: '結果日期' } }]
+    const ask = client('ask', '是不是？')
+    const rows = buildCoachWorkflow([result, ask], today)
+    expect(rows.filter(isActionable).map(r => r.clientId)).toEqual(['ask'])
+    const input: CoachDigestInput = { today, clients: [result, ask], workflowClients: [result, ask],
+      yesterdayWeightIds: [], yesterdayNutritionIds: [], yesterdayTraining: [], yesterdayWellness: [],
+      lastActiveByClient: { result: today, ask: today }, recentWeights: [], competitions: [], labsDue: [], proposals: [], adminUrl: 'https://example.test' }
+    const text = buildCoachDigest(input).text!
+    expect(text.split('\n')[1]).toContain('1 位要處理')
+    expect(text).not.toContain('目前未設定')
+    expect(text).toContain('資料日期：2026-10-01')
   })
   it('does not invent tasks for active quiet or >30 day silent students, and read does not mean done', () => {
     const c = client('active'); c.latestMessage = { sentAt: '2026-10-06', readAt: today }
@@ -92,7 +111,7 @@ it('uses the workflow headline for an active student question and shows the date
     yesterdayWeightIds: [], yesterdayNutritionIds: [], yesterdayTraining: [], yesterdayWellness: [],
     lastActiveByClient: { ask: today }, recentWeights: [], competitions: [], labsDue: [], proposals: [], adminUrl: 'https://example.test' }
   const digest = buildCoachDigest(input)
-  expect(digest.text!.split('\n')[1]).toContain('1 位有關注事項')
+  expect(digest.text!.split('\n')[1]).toContain('1 位要處理')
   expect(digest.text).not.toContain('沒人掉線，其餘看下面')
   expect(digest.text).toContain('2026-10-01｜既有回檢日，待你確認')
 })

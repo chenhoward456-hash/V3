@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, MessageSquare, RefreshCw, FilePenLine } from 'lucide-react'
-import type { CoachWorkItem } from '@/lib/coach-workflow'
+import { isActionable, type CoachWorkItem } from '@/lib/coach-workflow'
 
 type Message = { id: string; title: string; body: string; created_at: string; read_at: string | null; sent_via: string | null }
 type Adjustment = { id: string; applied_at: string; reason: string | null; applied_by: string; old_macros: Record<string, unknown>; new_macros: Record<string, unknown> }
@@ -21,9 +21,9 @@ function Reason({ item }: { item: CoachWorkItem }) {
   return <>
     <p className="text-base leading-relaxed text-slate-900">{item.reason}</p>
     <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.action}</p>
-    <p className="mt-3 text-sm text-slate-500">
-      {item.reasons[0]?.kind === 'result' ? '資料日期' : '複核'}：{item.review.date ? `${item.review.date} · ` : ''}{item.review.label}
-    </p>
+    {item.review.date && <p className="mt-3 text-sm text-slate-500">
+      {item.reasons[0]?.kind === 'result' ? '資料日期' : '複核'}：{item.review.date} · {item.review.label}
+    </p>}
     {(item.reasons.length > 1 || extraSignals.length > 0) && (
       <details className="mt-3 border-t border-slate-100 pt-3">
         <summary className="min-h-11 cursor-pointer text-sm font-medium text-primary-700">查看判斷依據與其他關注</summary>
@@ -72,7 +72,7 @@ export default function CoachWorkflowPanel({ clientId, coachNote, onCompose, onN
         <div>
           <p className="mb-1 text-xs font-medium text-slate-500">{data?.today || '教練工作區'} · 與 LINE 晨報共用清單</p>
           <h2 id="coach-workflow-title" className="text-xl font-semibold tracking-tight text-slate-900">{clientId ? '這次先處理' : '今天先處理'}</h2>
-          {!clientId && !pending && !error && <p className="mt-1 text-sm text-slate-600">{items.length ? `${items.length} 位有關注事項，先看前 3 位。` : '目前清單沒有待確認事項。'}</p>}
+          {!clientId && !pending && !error && <p className="mt-1 text-sm text-slate-600">{items.length ? `${items.filter(isActionable).length} 位要處理${items.some(i => !isActionable(i)) ? `，另有 ${items.filter(i => !isActionable(i)).length} 位只有近期結果可查看` : ''}；先看前 3 位。` : '目前清單沒有待確認事項。'}</p>}
         </div>
         <button type="button" onClick={() => setRefresh(n => n + 1)} disabled={pending} aria-label="重新整理處理清單" className={`${control} shrink-0 border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50`}>
           <RefreshCw size={16} className={pending ? 'animate-spin' : ''} /><span className="hidden sm:inline">更新</span>
@@ -99,7 +99,7 @@ export default function CoachWorkflowPanel({ clientId, coachNote, onCompose, onN
                 {data?.history?.messages[0] ? <div className="mt-4">
                   <p className="text-xs text-slate-500">{dateLabel(data.history.messages[0].created_at)} · 上次教練訊息</p>
                   <p className="mt-1 text-sm font-medium text-slate-800">{data.history.messages[0].title}</p>
-                  <p className="mt-2 text-xs text-slate-600">{data.history.messages[0].read_at ? '訊息卡已收起；仍需確認是否執行。' : '尚無收起紀錄；不代表學員未執行。'}</p>
+                  <p className="mt-2 text-xs text-slate-600">{data.history.messages[0].read_at ? '學員已關閉訊息卡；不代表已照做。' : '學員還沒關閉訊息卡；不代表沒看或沒照做。'}</p>
                   <details className="mt-2"><summary className="min-h-11 cursor-pointer text-sm text-primary-700">查看交付全文</summary><p className="whitespace-pre-wrap pb-3 text-sm leading-relaxed text-slate-700">{data.history.messages[0].body}</p></details>
                 </div> : !data?.history?.unavailable && <p className="mt-3 text-sm text-slate-600">目前沒有教練訊息紀錄。</p>}
                 {data?.history?.adjustments[0] && <div className="mt-4 border-t border-slate-200 pt-4">
@@ -118,7 +118,7 @@ export default function CoachWorkflowPanel({ clientId, coachNote, onCompose, onN
                 <div className="mb-3 flex items-center gap-3"><span className="text-sm font-medium text-slate-400">{String(i + 1).padStart(2, '0')}</span><h3 className="text-lg font-semibold text-slate-900">{item.name}</h3></div>
                 <Reason item={item} />
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs text-slate-500">{item.latestMessage ? `最近訊息 ${dateLabel(item.latestMessage.sentAt)} · ${item.latestMessage.readAt ? '訊息卡已收起' : '尚無收起紀錄'}` : '尚無教練訊息紀錄'}</p>
+                  <p className="text-xs text-slate-500">{item.latestMessage ? `最近訊息 ${dateLabel(item.latestMessage.sentAt)} · ${item.latestMessage.readAt ? '學員已關閉訊息卡' : '學員還沒關閉訊息卡'}` : '尚無教練訊息紀錄'}</p>
                   <Link href={item.href} className={`${control} bg-primary-600 text-white hover:bg-primary-700`}>查證與處理<ArrowRight size={16} /></Link>
                 </div>
               </div>)}

@@ -15,7 +15,7 @@ const wellness=Array.from({length:7},(_,i)=>({id:'well'+i,client_id:id,date:day(
 const trainingLogs=[1,3,5,8,10,12].map(n=>({id:'train'+n,client_id:id,date:day(n),training_type:'weight',rpe:7,duration:60,note:n===1?'肩推最後兩組肩膀不舒服，已停止。':''}));
 const overview={client,supplements:[],supplementLogs:[],wellness,trainingLogs,bodyData,labResults:[],nutritionLogs,trainingSets:[],personalNotes:[{id:'note1',category:'lifestyle',note:'最近工作輪班，睡眠不足時先詢問作息。',weight:8,relevant_until:day(-30)}]};
 const dashboard={clients:[client],supplements:[],supplementLogs:[],todayWellness:[{client_id:id}],todayLogs:[],todayTraining:[],todayNutrition:[{client_id:id}],todayBody:[{client_id:id}],recentBody:bodyData,recentNutrition:nutritionLogs,recentWellness:wellness,recentTrainingRPE:trainingLogs,activityBody:bodyData,activityNutrition:nutritionLogs,activityWellness:wellness,activityTraining:trainingLogs,pushClientIds:[]};
-const reason={kind:'signal',priority:100,reason:'10/6 他寫：「肩推最後兩組肩膀不舒服，已停止。」—— 有提到不舒服',action:'打開訓練筆記，先回覆他提出的問題或不舒服的地方',review:{date:null,label:'回覆後約定複核日；目前未設定'}};
+const reason={kind:'signal',priority:100,reason:'10/6 他寫：「肩推最後兩組肩膀不舒服，已停止。」—— 有提到不舒服',action:'打開訓練筆記，先回覆學員提出的問題或不舒服的地方',review:{date:null,label:'回覆後約定複核日；目前未設定'}};
 const items=[0,1,2,3].map((n)=>{const cid=n===0?id:`${n+1}${'1'.repeat(7)}-1111-4111-8111-111111111111`;const r=n===0?reason:{kind:n===1?'lab':n===2?'offline':'proposal',priority:100-n*20,reason:n===1?'血檢回檢逾期 3 天':n===2?'5 天沒有任何紀錄':'2 筆提案待你審核',action:n===1?'確認回檢安排與要追蹤的項目':n===2?'先確認近況，請他回報一筆目前的記錄':'打開提案檢查依據，再決定套用或退回',review:{date:n===1?day(3):null,label:n===1?'既有回檢日，待確認':'目前未設定'}};return {clientId:cid,name:n===0?client.name:`測試學員・案例${['二','三','四'][n-1]}`,priority:r.priority,reason:r.reason,action:r.action,review:r.review,href:`/admin/clients/${cid}/overview?workflow=1`,reasons:[r,{kind:'proposal',priority:40,reason:'另有一筆營養提案待審',action:'確認依據與最近記錄',review:{date:null,label:'目前未設定'}}],signals:[{kind:'student_note',sev:3,text:r.reason}],latestMessage:{sentAt:day(2)+'T09:00:00+08:00',readAt:n===0?null:day(1)+'T12:00:00+08:00'}}});
 if(scenario==='single'){items[0].reasons=[reason];items[0].signals=[{kind:'student_note',sev:3,text:reason.reason}]}
 const proposals=[0,1].map(n=>({id:'qa-proposal-'+n,client_id:id,proposed_at:day(n)+'T09:00:00+08:00',expires_at:null,proposal_type:'nutrition',current_state:{calories_target:2200},proposed_changes:{calories_target:2300+n*100},reasoning:'合成案例：核對兩週紀錄後提出，待教練查證。',clients:{name:client.name}}));
@@ -70,7 +70,7 @@ fs.mkdirSync(out,{recursive:true});
     check(label+': retry button recovers',true);
    }
    if(pageLabel==='overview'&&scenario==='single')check(label+': no empty reason details',await pg.locator('#coach-workflow').getByText('查看判斷依據與其他關注',{exact:true}).count()===0);
-   if(pageLabel==='overview'&&scenario==='read')check(label+': read still needs confirmation',(await pg.locator('#coach-workflow').innerText()).includes('訊息卡已收起；仍需確認是否執行。'));
+   if(pageLabel==='overview'&&scenario==='read')check(label+': read still needs confirmation',(await pg.locator('#coach-workflow').innerText()).includes('學員已關閉訊息卡；不代表已照做。'));
    await pg.screenshot({path:path.join(out,`${pageLabel}-${label}-viewport.png`),fullPage:false,animations:'disabled'});
    const file=path.join(out,`${pageLabel}-${label}.png`);await pg.screenshot({path:file,fullPage:true,animations:'disabled'});
    const scrollWidth=await pg.evaluate(()=>document.documentElement.scrollWidth);
@@ -92,8 +92,8 @@ fs.mkdirSync(out,{recursive:true});
    await panel.getByRole('link',{name:'查證與處理'}).first().click();
    await pg.waitForURL('**/overview?workflow=1');await pg.locator('#coach-workflow').getByRole('button',{name:'記處理備註',exact:true}).waitFor();
    panel=pg.locator('#coach-workflow');
-   check(label+': null review honest',(await panel.innerText()).includes('目前未設定'));
-   check(label+': read not execution',(await panel.innerText()).includes('尚無收起紀錄；不代表學員未執行。'));
+   check(label+': null review not invented or padded',!(await panel.innerText()).includes('目前未設定'));
+   check(label+': read not execution',(await panel.innerText()).includes('學員還沒關閉訊息卡；不代表沒看或沒照做。'));
    check(label+': review link',await panel.getByRole('link',{name:'查看／設定複核'}).getAttribute('href')===`/admin/clients/${id}/longevity`);
    await panel.getByRole('link',{name:'查看待審提案',exact:true}).click();
    await pg.waitForURL('**/admin?proposalClientId='+id+'#coach-proposals-'+id);

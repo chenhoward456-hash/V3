@@ -1041,6 +1041,9 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         logger.error('Coach digest error:', err)
         errors.push(`Coach digest: ${(err as Error).message || 'unknown'}`)
+        // 讀取失敗時整封不送（避免把讀不到當成「沒人要處理」），但要讓他知道今天沒晨報、不是沒事
+        await pushMessage(coachLineId, [{ type: 'text', text: `☀️ 教練晨報 ${today}\n今天資料讀取失敗，清單沒有產生（不代表沒人要處理）。\n👉 打開後台：${siteUrl}/admin` }])
+          .catch(pushErr => logger.error('Coach digest fallback push failed:', pushErr))
       }
     }
   } else {
