@@ -46,7 +46,7 @@ function BodyProfileCardInner({ data }: { data: BodyProfile | null }) {
   if (!entries || entries.length === 0) return null
 
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+    <section className="student-profile-panel bg-white border border-slate-200 rounded-2xl p-5 mb-4">
       <div className="flex items-center gap-2 mb-1">
         <h2 className="text-sm font-semibold text-slate-900">你的身體檔案</h2>
         <span className="ml-auto text-[11px] text-slate-400">{entries.length} 條已驗證</span>

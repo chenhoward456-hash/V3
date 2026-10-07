@@ -8,10 +8,11 @@ import dynamic from 'next/dynamic'
 import { useClientData, type Client, type ClientDataPayload } from '@/hooks/useClientData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useCoachMode } from '@/hooks/useCoachMode'
-import { Lock, ChevronDown, ChevronUp, ChevronRight, Scale, Utensils, Pill, Smile, Dumbbell } from 'lucide-react'
+import { Lock, ChevronDown, ChevronUp, ChevronRight, Scale, Utensils, Pill, Smile, Dumbbell, TrendingUp, HeartPulse, SlidersHorizontal, MessageSquare } from 'lucide-react'
 import BottomNav from '@/components/client/BottomNav'
 import HomeMetricStrip from '@/components/client/HomeMetricStrip'
 import homeStyles from './student-home.module.css'
+import tabStyles from './student-tabs.module.css'
 import CollapsibleSection from '@/components/client/CollapsibleSection'
 import NewUserLanding, { shouldUseNewUserMode } from '@/components/client/NewUserLanding'
 import QuickActions from '@/components/client/QuickActions'
@@ -850,10 +851,10 @@ export default function ClientDashboard() {
 
   return (
     <ErrorBoundary>
-    <div className={`min-h-screen bg-gray-50 ${view === 'home' ? homeStyles.home : ''}`}>
+    <div className={`min-h-screen bg-gray-50 ${view === 'home' ? homeStyles.home : tabStyles.shell}`}>
       {/* 法律同意 gate 已移至 app/c/[clientId]/layout.tsx（包住所有子頁，含血檢路由） */}
 
-      <div className={`max-w-4xl mx-auto px-4 pt-6 pb-24 ${view === 'home' ? homeStyles.content : ''}`}>
+      <div className={`max-w-4xl mx-auto px-4 pt-6 pb-24 ${view === 'home' ? homeStyles.content : tabStyles.content}`}>
 
         {/* 訂閱狀態 Banner */}
         {c.expires_at && (() => {
@@ -917,7 +918,7 @@ export default function ClientDashboard() {
         )}
 
         {/* 標題區 */}
-        <div className={view === 'home' ? homeStyles.header : "bg-white border border-slate-200 rounded-2xl p-5 mb-6"}>
+        <div className={homeStyles.header}>
           <ClientHeader
             client={c}
             isCoachMode={isCoachMode}
@@ -951,6 +952,13 @@ export default function ClientDashboard() {
           />
         </div>
 
+
+        {view !== 'home' && (
+          <div className={tabStyles.title}>
+            {view === 'data' ? <TrendingUp aria-hidden="true" /> : view === 'training' ? <Dumbbell aria-hidden="true" /> : view === 'lab' ? <HeartPulse aria-hidden="true" /> : <SlidersHorizontal aria-hidden="true" />}
+            <h1>{view === 'data' ? '進度' : view === 'training' ? '計畫' : view === 'lab' ? '健康' : '更多'}</h1>
+          </div>
+        )}
 
         {/* 教練訊息置頂 — 點推播進來第一眼就看到全文（之前藏在「為你更新」中段看不到）*/}
         {isToday && clientData.recentCoachMessage && (
@@ -2021,10 +2029,10 @@ export default function ClientDashboard() {
 
         {/* 教練資訊（從頂部移到這裡） */}
         {view === 'more' && (c.coach_last_viewed_at || c.coach_weekly_note || c.coach_summary) && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3">
+          <div className="student-coach-panel bg-white border border-slate-200 rounded-2xl p-4 mb-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-lg">💬</span>
+                <MessageSquare size={18} className="text-slate-500" aria-hidden="true" />
                 <span className="text-xs font-semibold text-amber-700">教練回饋</span>
               </div>
               {c.coach_last_viewed_at && (

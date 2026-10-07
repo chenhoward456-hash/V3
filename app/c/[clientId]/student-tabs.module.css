@@ -1,0 +1,40 @@
+.shell { background: #f5f6f7; }
+.content { max-width: 880px; padding-top: 20px; padding-bottom: 120px; }
+.title { display: flex; align-items: center; gap: 10px; margin: 26px 0 22px; color: #0f172a; }
+.title h1 { font-family: var(--font-noto-sans-tc), var(--font-inter), sans-serif; font-size: 26px; font-weight: 650; letter-spacing: -.04em; }
+.title svg { width: 24px; height: 24px; stroke-width: 1.5; }
+.shell :global(button:focus-visible), .shell :global(a:focus-visible) { outline: 2px solid #1e4a73; outline-offset: 4px; }
+.shell :global(.student-progress-panel) { background: #172026; border-color: #172026; padding: 24px; border-radius: 20px; }
+.shell :global(.student-progress-panel .text-gray-900), .shell :global(.student-progress-panel .text-gray-700) { color: #f1f5f9; }
+.shell :global(.student-progress-panel .text-gray-400), .shell :global(.student-progress-panel .text-gray-500), .shell :global(.student-progress-panel .text-gray-600) { color: #aebbc6; }
+.shell :global(.student-progress-panel .bg-slate-50) { background: #263138; border: 1px solid #39434a; }
+.shell :global(.student-progress-panel .text-emerald-600) { color: #6ee7b7; }
+.shell :global(.student-progress-panel .text-rose-500) { color: #fda4af; }
+.shell :global(.student-progress-panel .text-amber-600) { color: #fcd34d; }
+.shell :global(.student-workout-panel) { overflow: hidden; padding: 0 20px 20px; border-radius: 20px; }
+.shell :global(.student-workout-header) { margin: 0 -20px 20px; padding: 24px 20px; background: #172026; align-items: flex-start; gap: 12px; }
+.shell :global(.student-workout-header h3) { color: #f8fafc; font-size: 24px; line-height: 1.4; letter-spacing: -.04em; }
+.shell :global(.student-workout-header .text-gray-400) { color: #b3bec7; }
+.shell :global(.student-workout-header .text-primary-600) { color: #c9dceb; }
+.shell :global(.student-workout-panel table th) { padding-top: 14px; padding-bottom: 14px; }
+.shell :global(.student-workout-panel table td) { padding-top: 12px; padding-bottom: 12px; }
+.shell :global(.student-profile-panel) { border-radius: 20px; padding-top: 0; overflow: hidden; }
+.shell :global(.student-profile-panel > div:first-child) { background: #172026; margin: 0 -20px; padding: 24px 20px 8px; }
+.shell :global(.student-profile-panel > div:first-child h2) { color: #f8fafc; font-size: 20px; letter-spacing: -.03em; }
+.shell :global(.student-profile-panel > div:first-child span) { color: #b3bec7; }
+.shell :global(.student-profile-panel > p:first-of-type) { background: #172026; color: #b3bec7; margin: 0 -20px 8px; padding: 0 20px 24px; line-height: 1.6; }
+.shell :global(.student-profile-panel > ul > li > button) { padding-top: 18px; padding-bottom: 18px; }
+.shell :global(.student-coach-panel) { padding: 24px; border-radius: 20px; border: 1px solid #e2e8f0; background: white; }
+.shell :global(.student-coach-panel > div:first-child) { margin-bottom: 18px; }
+.shell :global(.student-coach-panel > div:first-child .text-amber-700) { color: #334155; font-size: 15px; }
+.shell :global(.student-coach-panel .text-amber-700) { color: #1e4a73; }
+.shell :global(.student-coach-panel .text-amber-900) { color: #16385a; }
+.shell :global(.student-coach-panel p) { line-height: 1.85; }
+@media (min-width: 768px) {
+  .content { padding-top: 32px; }
+  .title { margin-top: 32px; margin-bottom: 24px; }
+  .title h1 { font-size: 32px; }
+  .shell :global(.student-profile-panel > ul) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+  .shell :global(.student-profile-panel > ul > li:nth-child(2)) { border-top: 0; }
+  .shell :global(.student-workout-header) { padding-top: 28px; padding-bottom: 28px; }
+}
