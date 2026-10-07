@@ -217,8 +217,8 @@ export function getTriggerContent(
         type,
         title: '進階功能',
         message: ctx.featureName
-          ? `「${ctx.featureName}」需要自主管理方案。首月只要 NT$399。`
-          : '這個功能需要自主管理方案。首月只要 NT$399。',
+          ? `「${ctx.featureName}」需要自主管理方案（NT$499/月，不綁約）。`
+          : '這個功能需要自主管理方案（NT$499/月，不綁約）。',
         cta: '了解更多 →',
         link: '/remote',
       }

@@ -2413,7 +2413,7 @@ export default function ClientDashboard() {
                 experimentId="pricing_cta"
                 variants={{
                   original: <span>升級自主管理版 — NT$499/月</span>,
-                  urgency: <span>限時優惠：首月 NT$399（原價 NT$499）</span>,
+                  urgency: <span>月繳不綁約 — 升級 NT$499/月</span>,
                   social_proof: <span>200+ 學員正在使用 — 升級 NT$499/月</span>,
                 }}
                 fallback={<span>升級自主管理版 — NT$499/月</span>}

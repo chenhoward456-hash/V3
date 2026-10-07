@@ -37,8 +37,6 @@ const PLANS: Record<Tier, {
     price: 499,
     priceLabel: '499',
     unit: '/月',
-    promoPrice: 399,
-    promoLabel: '首月 $399',
     description: '你會記錄，但不知道記完之後要幹嘛',
     features: [
       '卡住時 AI 告訴你原因，不用自己猜',
@@ -331,13 +329,13 @@ function JoinPageInner() {
   const progressPercent = (currentStep / totalSteps) * 100
 
   return (
-    <section className="max-w-5xl mx-auto px-6 py-16 md:py-20">
+    <section className="max-w-5xl mx-auto px-5 py-8 md:py-14">
       {/* Progress Indicator */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md -mx-6 px-6 pt-4 pb-3 mb-8 border-b border-gray-100">
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md -mx-5 px-5 pt-4 pb-3 mb-8 border-b border-gray-100">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-gray-500">Step {currentStep} of {totalSteps}</span>
-            <span className="text-xs text-gray-400">{stepLabels[currentStep - 1]}</span>
+            <span className="text-xs text-gray-500">{stepLabels[currentStep - 1]}</span>
           </div>
           <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
@@ -351,12 +349,12 @@ function JoinPageInner() {
                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
                   i + 1 <= currentStep
                     ? 'bg-[#1E4A73] text-white'
-                    : 'bg-gray-200 text-gray-400'
+                    : 'bg-gray-200 text-gray-500'
                 }`}>
                   {i + 1 <= currentStep ? '\u2713' : i + 1}
                 </div>
                 <span className={`text-xs transition-colors ${
-                  i + 1 <= currentStep ? 'text-[#1E4A73] font-semibold' : 'text-gray-400'
+                  i + 1 <= currentStep ? 'text-[#1E4A73] font-semibold' : 'text-gray-500'
                 }`}>
                   {label}
                 </span>
@@ -367,11 +365,11 @@ function JoinPageInner() {
       </div>
 
       {/* Header */}
-      <div className="text-center mb-12">
-        <div className="inline-block bg-[#1E4A73]/10 text-[#1E4A73] text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
+      <div className="text-left md:text-center mb-10 max-w-2xl mx-auto">
+        <div className="inline-block text-slate-500 text-xs font-semibold tracking-wider mb-4">
           自助加入
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: '#1e3a5f' }}>
+        <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4" style={{ color: '#1e3a5f' }}>
           找到適合你的方式
         </h1>
         <p className="text-gray-500 text-sm md:text-base max-w-xl mx-auto">
@@ -386,11 +384,11 @@ function JoinPageInner() {
           return (
           <div
             key={tier}
-            className={`relative bg-white rounded-2xl border-2 p-5 transition-all ${isLineOnly ? '' : 'cursor-pointer'} hover:shadow-lg ${
+            className={`relative bg-white rounded-2xl border p-6 md:p-7 transition-colors ${isLineOnly ? '' : 'cursor-pointer'} hover:border-primary-300 ${
               selectedTier === tier
-                ? 'border-[#1E4A73] shadow-md'
+                ? 'border-primary-600 ring-1 ring-primary-600'
                 : plan.highlight
-                ? 'border-[#1E4A73]/50 shadow-sm'
+                ? 'border-primary-300'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
             onClick={() => !isLineOnly && handleSelectPlan(tier)}
@@ -398,41 +396,41 @@ function JoinPageInner() {
             {(plan.badge || plan.highlight) && (
               <div className={`absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${
                 plan.highlight ? 'bg-[#1e3a5f]'
-                : 'bg-green-500'
+                : 'bg-slate-900'
               }`}>
                 {plan.badge || '全台適用'}
               </div>
             )}
 
-            <div className="text-center mb-5">
-              <h3 className="text-base font-bold mb-1" style={{ color: '#1e3a5f' }}>
+            <div className="text-left mb-6">
+              <h3 className="text-lg font-semibold mb-2" style={{ color: '#1e3a5f' }}>
                 {plan.name}
               </h3>
-              <p className="text-[11px] text-gray-500 mb-3">{plan.description}</p>
+              <p className="text-sm text-slate-500 mb-5">{plan.description}</p>
               {tier === 'self_managed' && plan.promoPrice ? (
-                <div className="text-center">
-                  <div className="flex items-baseline justify-center gap-1.5">
-                    <span className="line-through text-gray-400 text-sm">NT${plan.priceLabel}</span>
-                    <span className="text-2xl font-bold text-primary-600">NT${plan.promoPrice}</span>
-                    <span className="text-xs text-gray-400">/首月</span>
+                <div className="text-left">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="line-through text-gray-500 text-sm">NT${plan.priceLabel}</span>
+                    <span className="text-4xl font-semibold tracking-tight tabular-nums text-slate-900">NT${plan.promoPrice}</span>
+                    <span className="text-xs text-gray-500">/首月</span>
                   </div>
                   <span className="text-xs text-gray-500">次月起 NT${plan.priceLabel}/月</span>
                 </div>
               ) : (
-              <div className="flex items-baseline justify-center gap-1">
-                {plan.price > 0 && <span className="text-xs text-gray-400">NT$</span>}
-                <span className="text-3xl font-bold" style={{ color: plan.price === 0 ? '#16a34a' : '#1e3a5f' }}>
+              <div className="flex items-baseline gap-1">
+                {plan.price > 0 && <span className="text-xs text-gray-500">NT$</span>}
+                <span className="text-4xl font-semibold tracking-tight tabular-nums text-slate-900">
                   {plan.price === 0 ? '免費' : plan.priceLabel}
                 </span>
-                <span className="text-xs text-gray-400">{plan.unit}</span>
+                <span className="text-xs text-gray-500">{plan.unit}</span>
               </div>
               )}
             </div>
 
             <ul className="space-y-2 mb-5">
               {plan.features.map((f, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-gray-600">
-                  <span className="text-green-500 mt-0.5 flex-shrink-0">&#10003;</span>
+                <li key={i} className="flex items-start gap-2 text-sm leading-6 text-slate-600">
+                  <span className="text-slate-400 mt-0.5 flex-shrink-0">&#10003;</span>
                   {f}
                 </li>
               ))}
@@ -444,18 +442,18 @@ function JoinPageInner() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="block w-full py-2.5 rounded-xl font-semibold text-sm text-center transition-colors bg-[#1e3a5f] text-white hover:bg-[#162d4a]"
+                className="block w-full py-3 rounded-xl font-semibold text-sm text-center transition-colors bg-[#1e3a5f] text-white hover:bg-[#162d4a]"
               >
                 加 LINE 諮詢
               </a>
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); handleSelectPlan(tier) }}
-                className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors ${
                   selectedTier === tier
                     ? 'bg-[#1E4A73] text-white'
                     : plan.price === 0
-                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
                     : plan.highlight
                     ? 'bg-[#1E4A73]/10 text-[#1E4A73] hover:bg-[#1E4A73]/20'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -474,7 +472,7 @@ function JoinPageInner() {
         <div className="text-center mb-6 -mt-6">
           <button
             onClick={() => handleSelectPlan('free')}
-            className="text-sm text-gray-400 hover:text-[#1E4A73] transition-colors"
+            className="text-sm text-gray-500 hover:text-[#1E4A73] transition-colors"
           >
             還沒準備好？先從免費方案開始 &rarr;
           </button>
@@ -526,7 +524,7 @@ function JoinPageInner() {
       {/* Registration Form */}
       {formStep === 'form' && selectedTier && (
         <div id="registration-form" className="max-w-lg mx-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8">
             <h2 className="text-xl font-bold mb-1" style={{ color: '#1e3a5f' }}>
               填寫基本資料
             </h2>
@@ -573,7 +571,7 @@ function JoinPageInner() {
                 {touchedFields.has('email') && fieldErrors.email ? (
                   <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
                 ) : (
-                  <p className="text-xs text-gray-400 mt-1">帳號資訊會寄到這裡</p>
+                  <p className="text-xs text-gray-500 mt-1">帳號資訊會寄到這裡</p>
                 )}
               </div>
 
@@ -581,7 +579,7 @@ function JoinPageInner() {
               {!isFree && (
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                    手機號碼 <span className="text-gray-400 font-normal">— 選填</span>
+                    手機號碼 <span className="text-gray-500 font-normal">— 選填</span>
                   </label>
                   <input
                     type="tel"
@@ -617,7 +615,7 @@ function JoinPageInner() {
               {/* 年齡（所有方案都在主表單顯示，選填） */}
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                  年齡 <span className="text-gray-400 font-normal">— 選填，影響 TDEE 計算</span>
+                  年齡 <span className="text-gray-500 font-normal">— 選填，影響 TDEE 計算</span>
                 </label>
                 <input
                   type="number"
@@ -714,7 +712,7 @@ function JoinPageInner() {
               {(!isFree || showOptionalFields) && (
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                  體脂率 (%) <span className="text-gray-400 font-normal">— 選填，有填計算更準</span>
+                  體脂率 (%) <span className="text-gray-500 font-normal">— 選填，有填計算更準</span>
                 </label>
                 <input
                   type="number"
@@ -731,7 +729,7 @@ function JoinPageInner() {
                 {touchedFields.has('bodyFatPct') && fieldErrors.bodyFatPct ? (
                   <p className="text-xs text-red-500 mt-1">{fieldErrors.bodyFatPct}</p>
                 ) : (
-                  <p className="text-xs text-gray-400 mt-1">InBody、體脂計或健身房量測的數字。沒有也沒關係，系統會用體重估算。</p>
+                  <p className="text-xs text-gray-500 mt-1">InBody、體脂計或健身房量測的數字。沒有也沒關係，系統會用體重估算。</p>
                 )}
               </div>
               )}
@@ -742,7 +740,7 @@ function JoinPageInner() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                    目標體重 (kg) <span className="text-gray-400 font-normal">— 選填</span>
+                    目標體重 (kg) <span className="text-gray-500 font-normal">— 選填</span>
                   </label>
                   <input
                     type="number"
@@ -758,7 +756,7 @@ function JoinPageInner() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                    目標體脂 (%) <span className="text-gray-400 font-normal">— 選填</span>
+                    目標體脂 (%) <span className="text-gray-500 font-normal">— 選填</span>
                   </label>
                   <input
                     type="number"
@@ -774,7 +772,7 @@ function JoinPageInner() {
                 </div>
               </div>
               {goalType === 'recomp' && (
-                <p className="text-xs text-gray-400 mt-1">體態重組：體重可能不變，但體脂下降、肌肉增加。建議填寫目標體脂。</p>
+                <p className="text-xs text-gray-500 mt-1">體態重組：體重可能不變，但體脂下降、肌肉增加。建議填寫目標體脂。</p>
               )}
               </>
               )}
@@ -826,7 +824,7 @@ function JoinPageInner() {
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-1">包含重訓和有氧</p>
+                <p className="text-xs text-gray-500 mt-1">包含重訓和有氧</p>
               </div>
               </>
               )}
@@ -865,7 +863,7 @@ function JoinPageInner() {
                 disabled={isSubmitting}
                 className={`w-full py-4 rounded-xl font-bold text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center gap-2 ${
                   isFree
-                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
                     : 'bg-[#1E4A73] text-white hover:bg-[#16385A]'
                 }`}
               >
@@ -880,12 +878,12 @@ function JoinPageInner() {
                   : isFree ? '立即開始免費體驗' : `前往付款 — NT$${PLANS[selectedTier].priceLabel}`
                 }
               </button>
-              <p className="text-xs text-gray-400 text-center mt-2">提交後系統會自動建立帳號，登入資訊會寄到你的 Email</p>
+              <p className="text-xs text-gray-500 text-center mt-2">提交後系統會自動建立帳號，登入資訊會寄到你的 Email</p>
 
               {/* Reassurance text */}
               {!isFree && (
                 <div className="mt-4 space-y-2">
-                  <div className="flex items-center justify-center gap-4 text-gray-400">
+                  <div className="flex items-center justify-center gap-4 text-gray-500">
                     <span className="flex items-center gap-1 text-xs">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -905,10 +903,10 @@ function JoinPageInner() {
                       無違約金
                     </span>
                   </div>
-                  <p className="text-center text-xs text-gray-400">
+                  <p className="text-center text-xs text-gray-500">
                     月繳制，不滿意隨時停止
                   </p>
-                  <div className="flex items-center justify-center gap-1.5 text-gray-400">
+                  <div className="flex items-center justify-center gap-1.5 text-gray-500">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
@@ -917,7 +915,7 @@ function JoinPageInner() {
                 </div>
               )}
 
-              <p className="text-center text-xs text-gray-400 mt-2">
+              <p className="text-center text-xs text-gray-500 mt-2">
                 {isFree
                   ? '不需信用卡，隨時可升級付費方案。'
                   : '支援信用卡、ATM、超商付款'
@@ -932,7 +930,7 @@ function JoinPageInner() {
                       setSelectedTier('free')
                       trackEvent('plan_downgrade_to_free', { from: selectedTier })
                     }}
-                    className="text-xs text-gray-400 hover:text-[#1E4A73] transition-colors"
+                    className="text-xs text-gray-500 hover:text-[#1E4A73] transition-colors"
                   >
                     還沒準備好？先從免費方案開始 &rarr;
                   </button>
@@ -949,7 +947,7 @@ function JoinPageInner() {
 
       {/* Bottom */}
       <div className="text-center mt-10">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           想先了解系統？
           <Link href="/diagnosis" className="text-[#1E4A73] hover:underline ml-1">
             免費系統分析體驗
