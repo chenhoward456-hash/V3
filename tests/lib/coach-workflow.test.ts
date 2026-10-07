@@ -157,3 +157,22 @@ it.each(['lab_results', 'daily_wellness', 'body_composition'])('rejects unavaila
   const read = failingTable === 'lab_results' ? loadHypothesisUpdates : loadExperimentUpdates
   await expect(read(supabase as never, today, { includeNotified: true, throwOnReadError: true })).rejects.toThrow('結果讀取失敗')
 })
+
+
+it.each(['hypothesis', 'experiment'])('does not request result evidence for inactive-only %s parents', async kind => {
+  const parentTable = kind === 'hypothesis' ? 'lab_hypotheses' : 'body_experiments'
+  const queried: string[] = []
+  const supabase = { from(table: string) {
+    queried.push(table)
+    if (table !== parentTable) throw new Error('No active parents need evidence')
+    const q = { select() { return q }, lt() { return q },
+      then(resolve: (result: { data: object[]; error: null }) => unknown) {
+        return Promise.resolve(resolve({ data: [{ client_id: 'inactive', clients: { is_active: false } }], error: null }))
+      },
+    }; return q
+  } }
+  const read = kind === 'hypothesis' ? loadHypothesisUpdates : loadExperimentUpdates
+  const result = await read(supabase as never, today, { includeNotified: true, throwOnReadError: true })
+  expect(result).toEqual(kind === 'hypothesis' ? { graded: [], overdue: [] } : [])
+  expect(queried).toEqual([parentTable])
+})

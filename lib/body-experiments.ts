@@ -205,6 +205,7 @@ export async function loadExperimentUpdates(supabase: QueryLike, today: string, 
 
   type Row = BodyExperiment & { clients: { name: string; unique_code: string; line_user_id: string | null; is_active: boolean | null } }
   const active = (exps as Row[]).filter(e => e.clients.is_active !== false)
+  if (active.length === 0) return []
   const ids = [...new Set(active.map(e => e.client_id))]
   const earliest = active.map(e => addDays(e.start_date, -e.baseline_days)).sort()[0]
   const [{ data: wellness, error: wellnessError }, { data: weights, error: weightsError }] = await Promise.all([

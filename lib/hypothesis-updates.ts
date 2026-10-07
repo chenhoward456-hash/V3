@@ -66,6 +66,7 @@ export async function loadHypothesisUpdates(supabase: QueryLike, today: string, 
 
   const active = (hyps as (LabHypothesis & { client_id: string; notified_status: string | null; clients: { id: string; name: string; unique_code: string; line_user_id: string | null; is_active: boolean | null; gender?: string | null } })[])
     .filter(h => h.clients.is_active !== false)
+  if (active.length === 0) return { graded: [], overdue: [] }
   const clientIds = [...new Set(active.map(h => h.client_id))]
   const markers = [...new Set(active.map(h => h.marker))]
   const { data: labs, error: labsError } = await supabase
