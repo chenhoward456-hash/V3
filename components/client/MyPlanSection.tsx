@@ -45,7 +45,7 @@ function renderBody(text: string) {
   )
 }
 
-function MyPlanSectionInner({ data }: { data: OnboardingRendered | null }) {
+function MyPlanSectionInner({ data, defaultCollapsed = false }: { data: OnboardingRendered | null; defaultCollapsed?: boolean }) {
   const sections = data?.sections
   const renderedAt = data?.rendered_at ?? ''
   const [seenAt, setSeenAt] = useState<string | null>(null)
@@ -59,7 +59,7 @@ function MyPlanSectionInner({ data }: { data: OnboardingRendered | null }) {
   // 沒看過，或教練改寫過（rendered_at 比記錄的新）
   const hasUpdate = !seenAt || (!!renderedAt && renderedAt > seenAt)
   const [manualOpen, setManualOpen] = useState<boolean | null>(null)
-  const listOpen = manualOpen ?? hasUpdate
+  const listOpen = manualOpen ?? (defaultCollapsed ? false : hasUpdate)
 
   const toggle = () => {
     setManualOpen(!listOpen)

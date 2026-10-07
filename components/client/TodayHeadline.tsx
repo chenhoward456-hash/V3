@@ -198,7 +198,7 @@ function TodayHeadlineInner({
     : engineAction ?? [dayLabel, carbPart, doPart].filter(Boolean).join('，')
 
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+    <section className="home-headline bg-white border border-slate-200 rounded-2xl p-6 mb-4">
       {/* 目標 + 倒數 — 備賽客戶的階段/倒數由下方備賽倒數卡講（同屏不講兩次），這裡只補目標 */}
       {(() => {
         const chips = [
@@ -225,11 +225,11 @@ function TodayHeadlineInner({
                 ? (isPositive ? 'bg-emerald-500' : isNegative ? 'bg-amber-500' : 'bg-slate-300')
                 : startMode ? 'bg-primary-500' : 'bg-slate-300'
           }`} />
-          <p className={`text-base font-bold leading-snug ${
+          <p className={`text-[20px] font-semibold leading-[1.4] tracking-tight ${
             engineTitle
-              ? 'text-amber-700'
+              ? 'text-slate-900'
               : verdict
-                ? (isPositive ? 'text-emerald-700' : isNegative ? 'text-amber-700' : 'text-slate-900')
+                ? (isPositive ? 'text-slate-900' : isNegative ? 'text-slate-900' : 'text-slate-900')
                 : startMode ? 'text-primary-700' : 'text-slate-700'
           }`}>
             {engineTitle ?? (verdict ? verdict.title : fallbackTitle)}
@@ -244,7 +244,7 @@ function TodayHeadlineInner({
           震宣回報「介面感覺更複雜了」，互相打架的指令比多一個按鈕更糟。
           必做的那件留給 QuickActions（它才是真的只有一件），這裡改成「訓練與飲食的重點」。 */}
       {actionText && (
-        <div className="rounded-xl bg-slate-50 px-3.5 py-3">
+        <div className="border-t border-slate-100 pt-4">
           <p className="text-sm text-slate-800 leading-relaxed">
             <span className="font-semibold text-slate-900">今天的重點：</span>
             {actionText}。
