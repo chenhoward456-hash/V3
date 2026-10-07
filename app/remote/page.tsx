@@ -106,7 +106,6 @@ export default function RemotePage() {
                   <span className="text-4xl font-bold" style={{ color: '#1e3a5f' }}>NT$499</span>
                   <span className="text-gray-400 text-sm"> /月</span>
                 </div>
-                <p className="text-xs text-[#1E4A73] font-medium mb-1">限時優惠：首月 NT$399</p>
                 <p className="text-xs text-gray-400 mb-6">每天不到 NT$17，比一杯超商咖啡便宜</p>
                 <ul className="space-y-3 text-gray-700 mb-8 flex-1 text-sm">
                   <li className="flex items-start gap-2"><span className="text-[#1E4A73] mt-0.5">&#10003;</span>智能引擎 24 小時自動分析</li>

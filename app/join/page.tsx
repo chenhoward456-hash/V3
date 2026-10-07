@@ -37,8 +37,6 @@ const PLANS: Record<Tier, {
     price: 499,
     priceLabel: '499',
     unit: '/月',
-    promoPrice: 399,
-    promoLabel: '首月 $399',
     description: '你會記錄，但不知道記完之後要幹嘛',
     features: [
       '卡住時 AI 告訴你原因，不用自己猜',

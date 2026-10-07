@@ -747,7 +747,7 @@ export default function HomePage() {
 
           {/* Urgency badge */}
           <div className="inline-block bg-white/5 border border-white/20 text-slate-200 text-sm font-semibold px-5 py-2 rounded-full mb-8">
-            限時優惠：自主管理版首月 NT$399（原價 NT$499）
+            自主管理版 NT$499/月 · 先用免費版試準不準再升級
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
@@ -758,10 +758,10 @@ export default function HomePage() {
               免費開始 →
             </Link>
             <Link
-              href="/join?tier=self_managed&promo=first399"
+              href="/join?tier=self_managed"
               className="inline-block bg-white text-navy px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors min-h-[48px]"
             >
-              NT$399 限時體驗 →
+              NT$499 自主管理 →
             </Link>
           </div>
 
