@@ -4,6 +4,7 @@ import { memo } from 'react'
 import { daysUntilDateTW } from '@/lib/date-utils'
 import { degradeToSafe } from '@/lib/compliance-scrub'
 import type { WeeklyTasksData } from './WeeklyTaskCard'
+import WeightHero from './WeightHero'
 
 /**
  * 今日主線 — 首屏「一句判定 + 今天一個動作」的脊椎卡。
@@ -133,6 +134,10 @@ export interface TodayHeadlineProps {
   engine?: EngineActionInput | null
   /** 點「有健康指標要留意」→ 切到健康分頁（血檢進退）。原本寫「往下看血檢」但首頁往下根本沒有血檢 */
   onOpenLab?: () => void
+  /** 主角數字用的體重序列（可缺；少於 2 筆就不畫）*/
+  weights?: { date: string; weight: number }[]
+  /** 台灣日 YYYY-MM-DD */
+  today?: string
 }
 
 function TodayHeadlineInner({
@@ -150,7 +155,10 @@ function TodayHeadlineInner({
   onOpenLab,
   recentlyActive,
   engine,
+  weights,
+  today,
 }: TodayHeadlineProps) {
+  const heroShown = !!(weights && today && weights.length >= 2)
   const tasks = Array.isArray(weeklyTasks?.tasks) ? weeklyTasks!.tasks : []
   const verdict = tasks[0] ?? null
   const extraTasks = tasks.slice(1)
@@ -199,12 +207,20 @@ function TodayHeadlineInner({
 
   return (
     <section className="bg-white border border-slate-200 rounded-2xl p-5 mb-4">
+      {weights && today && (
+        <WeightHero
+          weights={weights}
+          targetWeight={targetWeight != null && targetWeight !== '' && Number.isFinite(Number(targetWeight)) ? Number(targetWeight) : null}
+          today={today}
+        />
+      )}
       {/* 目標 + 倒數 — 備賽客戶的階段/倒數由下方備賽倒數卡講（同屏不講兩次），這裡只補目標 */}
       {(() => {
         const chips = [
           // 備賽客戶的階段由下方備賽倒數卡講，同屏不講兩次
           !isCompetition && phaseLabel,
-          targetWeight != null && targetWeight !== '' && `目標 ${targetWeight}kg`,
+          // 有主角數字時「距目標」已經寫在數字旁，這裡不重複
+          !(weights && weights.length >= 2) && targetWeight != null && targetWeight !== '' && `目標 ${targetWeight}kg`,
         ].filter(Boolean) as string[]
         if (chips.length === 0) return null
         return (
@@ -225,14 +241,19 @@ function TodayHeadlineInner({
                 ? (isPositive ? 'bg-emerald-500' : isNegative ? 'bg-amber-500' : 'bg-slate-300')
                 : startMode ? 'bg-primary-500' : 'bg-slate-300'
           }`} />
-          <p className={`text-base font-bold leading-snug ${
+          <p className={`${heroShown ? 'text-[15px] font-semibold' : 'text-base font-bold'} leading-snug ${
             engineTitle
               ? 'text-amber-700'
               : verdict
                 ? (isPositive ? 'text-emerald-700' : isNegative ? 'text-amber-700' : 'text-slate-900')
                 : startMode ? 'text-primary-700' : 'text-slate-700'
           }`}>
-            {engineTitle ?? (verdict ? verdict.title : fallbackTitle)}
+            {(() => {
+              const t = engineTitle ?? (verdict ? verdict.title : fallbackTitle) ?? ''
+              // 有主角數字時，判定句裡的體重數字（週排程算的，比即時的舊）會跟大數字對不上
+              // → 只留冒號前的判定詞（「狀態穩」），數字交給上面的大數字講
+              return heroShown && /[：:].*\d/.test(t) ? t.split(/[：:]/)[0] : t
+            })()}
           </p>
         </div>
       )}

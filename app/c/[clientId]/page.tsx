@@ -919,58 +919,8 @@ export default function ClientDashboard() {
           <CoachMessageBanner msg={clientData.recentCoachMessage} clientCode={c.unique_code} />
         )}
 
-        {/* 今日主線 — 首屏脊椎：一句判定 + 今天一個動作（吸收原「本週任務」判定，收斂多卡為一個聲音）*/}
-        {view === 'home' && isToday && (
-          <TodayHeadline
-            goalType={c.goal_type ?? null}
-            prepPhase={c.prep_phase || null}
-            competitionDate={c.competition_date || null}
-            isCompetition={isCompetition}
-            targetWeight={c.target_weight ?? null}
-            isTrainingDay={isTrainingDayResolved}
-            carbsTrainingDay={c.carbs_training_day ?? null}
-            carbsRestDay={c.carbs_rest_day ?? null}
-            carbsTarget={c.carbs_target ?? null}
-            weeklyTasks={c.weekly_tasks}
-            hasAttention={!!c.status && c.status !== 'normal'}
-            onOpenLab={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-            recentlyActive={overallStreak > 0}
-            engine={nutritionEngineSuggestion}
-          />
-        )}
-
-        {/* 首次來訪導覽 banner（dismissible）*/}
-        {view === 'home' && isToday && <WelcomeBanner clientId={clientId as string} isNew={isNewClient} />}
-
-        {/* 推播開通 — 已下移到行動/判決卡之後（開通推播=留存槓桿，但別佔掉第一屏；gated）*/}
-
-        {/* 核心邏輯一句話 — 暫藏 2026-06-12（去雜訊，常駐文案無資訊量；移除 false 即還原） */}
-        {false && isToday && (
-          <div className="mb-4 px-4 py-2.5 bg-zinc-50 border-l-2 border-emerald-500 rounded-r-lg">
-            <p className="text-[11px] text-gray-600 leading-relaxed">
-              <span className="text-[11px] uppercase tracking-wider font-bold text-emerald-700 mr-1.5">重點</span>
-              不是「算營養素」，是<b className="text-zinc-900">連續追蹤 + 累積對照</b>。連續打卡 14 天，趨勢才會說話。
-            </p>
-          </div>
-        )}
-
-        {/* 🔥 streak chip — 暫藏 2026-06-12（streak 已在 TodayOverviewCard 顯示，避免重複；移除 false 即還原） */}
-        {false && isToday && streakDays >= 3 && (
-          <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-200 rounded-full">
-            <span className="text-lg">🔥</span>
-            <div>
-              <span className="text-sm font-semibold text-orange-900">
-                連續 {streakDays} 天
-              </span>
-              <span className="text-xs text-orange-700 ml-2">
-                {streakMessage}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* 標題區 */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
+        {/* 標題區 —— 2026-10-07 從卡片改成細列、移到最上面：日期切換＋設定是工具，不是內容 */}
+        <div className="px-1 mb-3">
           <ClientHeader
             client={c}
             isCoachMode={isCoachMode}
@@ -1004,9 +954,110 @@ export default function ClientDashboard() {
           />
         </div>
 
+        {/* 今日主線 — 首屏脊椎：一句判定 + 今天一個動作（吸收原「本週任務」判定，收斂多卡為一個聲音）*/}
+        {view === 'home' && isToday && (
+          <TodayHeadline
+            goalType={c.goal_type ?? null}
+            prepPhase={c.prep_phase || null}
+            competitionDate={c.competition_date || null}
+            isCompetition={isCompetition}
+            targetWeight={c.target_weight ?? null}
+            isTrainingDay={isTrainingDayResolved}
+            carbsTrainingDay={c.carbs_training_day ?? null}
+            carbsRestDay={c.carbs_rest_day ?? null}
+            carbsTarget={c.carbs_target ?? null}
+            weeklyTasks={c.weekly_tasks}
+            hasAttention={!!c.status && c.status !== 'normal'}
+            onOpenLab={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+            recentlyActive={overallStreak > 0}
+            engine={nutritionEngineSuggestion}
+            weights={(clientData.bodyData ?? EMPTY_ARRAY).filter((b) => b.weight != null).map((b) => ({ date: b.date, weight: Number(b.weight) }))}
+            today={today}
+          />
+        )}
+
+        {/* 首次來訪導覽 banner（dismissible）*/}
+        {view === 'home' && isToday && <WelcomeBanner clientId={clientId as string} isNew={isNewClient} />}
+
+        {/* 推播開通 — 已下移到行動/判決卡之後（開通推播=留存槓桿，但別佔掉第一屏；gated）*/}
+
+        {/* 核心邏輯一句話 — 暫藏 2026-06-12（去雜訊，常駐文案無資訊量；移除 false 即還原） */}
+        {false && isToday && (
+          <div className="mb-4 px-4 py-2.5 bg-zinc-50 border-l-2 border-emerald-500 rounded-r-lg">
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              <span className="text-[11px] uppercase tracking-wider font-bold text-emerald-700 mr-1.5">重點</span>
+              不是「算營養素」，是<b className="text-zinc-900">連續追蹤 + 累積對照</b>。連續打卡 14 天，趨勢才會說話。
+            </p>
+          </div>
+        )}
+
+        {/* 🔥 streak chip — 暫藏 2026-06-12（streak 已在 TodayOverviewCard 顯示，避免重複；移除 false 即還原） */}
+        {false && isToday && streakDays >= 3 && (
+          <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-200 rounded-full">
+            <span className="text-lg">🔥</span>
+            <div>
+              <span className="text-sm font-semibold text-orange-900">
+                連續 {streakDays} 天
+              </span>
+              <span className="text-xs text-orange-700 ml-2">
+                {streakMessage}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* 🎯 今日教練指令 — 首頁最上面一句話：今天該幹嘛 + 還剩幾項沒打卡（打完變慶祝） */}
         {/* 身體檔案定錨 — 擺在「今日重點」之上：先回答「你的身體目前告訴我們什麼」（目的），
             再問「你今天要記什麼」（手段）。原本首頁只有後者，主從是顛倒的。 */}
+        {/* 今日重點：**體重是唯一的必做**，其餘全是加分。
+            ⚠️ 2026-08-19 改（Howard：「這個模式真的偏難誒」）—— 他說對了，數據也站在他那邊：
+            近 21 天全班飲食記錄天數只有體重的 57%，Sean 體重 48% 但飲食 10%，
+            連 Howard 自己的 67% 都是按「達標」鈕填的假數字。
+            而系統真正需要的只有體重（見 lib/implied-intake 的 estimateActualIntake：
+            判斷該調處方還是修執行，只靠體重就算得出來）。
+            原本寫「今天還有 N 項可記」把五件事並列，等於每天給四個失敗理由。 */}
+        {view === 'home' && isToday && (() => {
+          if (!c.body_composition_enabled) return null
+          const weightDone = !!(latestBodyData && latestBodyData.date === selectedDate)
+          // 2026-10-07：原本兩行字（「另外記了 4/4 項加分的 —— …」），記了哪幾項看不出來。
+          // 改成一排小標籤：實心＝記了、空心＝沒記；體重是唯一必做，排第一、單獨標。
+          const extras = [
+            c.nutrition_enabled ? { label: '飲食', done: !!todayNutrition } : null,
+            (c.supplement_enabled && (c.supplements || []).length > 0) ? { label: '補品', done: todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total } : null,
+            c.wellness_enabled ? { label: '感受', done: !!todayWellness } : null,
+            c.training_enabled ? { label: '訓練', done: !!todayTraining } : null,
+          ].filter(Boolean) as { label: string; done: boolean }[]
+          const Tag = ({ label, done, main }: { label: string; done: boolean; main?: boolean }) => (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs tabular-nums border ${
+              done
+                ? (main ? 'bg-emerald-600 border-emerald-600 text-white font-semibold' : 'bg-white border-slate-300 text-slate-700 font-medium')
+                : 'bg-white border-dashed border-slate-300 text-slate-400'
+            }`}>
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${done ? (main ? 'bg-white' : 'bg-emerald-500') : 'border border-slate-300'}`} />
+              {label}
+            </span>
+          )
+          return (
+            <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3.5 mb-3">
+              <p className="text-sm text-slate-700 leading-snug">
+                <span className="font-semibold text-slate-900">今天只有一件必做</span>
+                {' · '}
+                {weightDone
+                  ? <span className="text-emerald-700 font-semibold">體重記好了，今天就算完成</span>
+                  : <span className="text-slate-500">量早晨體重（其他都是加分，沒空就跳過）</span>}
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                <Tag label="體重" done={weightDone} main />
+                {extras.length > 0 && <span className="text-[11px] text-slate-300 mx-0.5">加分</span>}
+                {extras.map(e => <Tag key={e.label} label={e.label} done={e.done} />)}
+              </div>
+            </div>
+          )
+        })()}
+
+        {view === 'home' && isToday && (c.body_profile || c.lab_enabled) && (
+          <p className="text-[11px] font-medium text-slate-400 tracking-wide px-1 mt-6 mb-2">你的身體</p>
+        )}
         {view === 'home' && isToday && (
           <BodyProfileAnchor
             data={c.body_profile}
@@ -1019,40 +1070,6 @@ export default function ClientDashboard() {
           <LongevityTeaser code={c.unique_code} onOpen={() => { setView('lab'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />
         )}
 
-        {/* 今日重點：**體重是唯一的必做**，其餘全是加分。
-            ⚠️ 2026-08-19 改（Howard：「這個模式真的偏難誒」）—— 他說對了，數據也站在他那邊：
-            近 21 天全班飲食記錄天數只有體重的 57%，Sean 體重 48% 但飲食 10%，
-            連 Howard 自己的 67% 都是按「達標」鈕填的假數字。
-            而系統真正需要的只有體重（見 lib/implied-intake 的 estimateActualIntake：
-            判斷該調處方還是修執行，只靠體重就算得出來）。
-            原本寫「今天還有 N 項可記」把五件事並列，等於每天給四個失敗理由。 */}
-        {view === 'home' && isToday && (() => {
-          if (!c.body_composition_enabled) return null
-          const weightDone = !!(latestBodyData && latestBodyData.date === selectedDate)
-          const extras = [
-            c.nutrition_enabled ? !!todayNutrition : null,
-            (c.supplement_enabled && (c.supplements || []).length > 0) ? (todaySupplementStats.total > 0 && todaySupplementStats.completed === todaySupplementStats.total) : null,
-            c.wellness_enabled ? !!todayWellness : null,
-            c.training_enabled ? !!todayTraining : null,
-          ].filter(v => v !== null) as boolean[]
-          const extrasDone = extras.filter(Boolean).length
-          return (
-            <div className={`border rounded-2xl p-4 mb-3 ${weightDone ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
-              <p className="text-sm text-gray-700 leading-snug">
-                <span className="font-semibold text-gray-900">今天只有一件必做</span>
-                {' · '}
-                {weightDone
-                  ? <span className="text-emerald-700 font-semibold">體重記好了，今天就算完成</span>
-                  : <span className="text-slate-500">量早晨體重（其他都是加分，沒空就跳過）</span>}
-              </p>
-              {weightDone && extras.length > 0 && (
-                <p className="text-[11px] text-slate-400 mt-1 tabular-nums">
-                  另外記了 {extrasDone}/{extras.length} 項加分的 —— 記了我更看得懂你的狀況，但不記也不影響判斷
-                </p>
-              )}
-            </div>
-          )
-        })()}
 
         {/* 我的目標 —— 學員自己能改（目標＝他想要什麼；每天吃什麼＝處方，仍由教練設定）。
             放進度分頁：他來看「我在贏嗎」的時候，正好是會想調目標的時機。 */}

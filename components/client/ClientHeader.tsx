@@ -84,6 +84,52 @@ export default function ClientHeader({
     return d.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })
   }
 
+  // 學員端把日期切換併進圖示那一列（2026-10-07）：原本獨佔一條灰底大條＋外面一張卡，首屏第二好的位置只放了「今天」兩個字
+  const renderDateNav = (compact: boolean) => (
+      <div className={compact ? 'flex items-center gap-0.5 -ml-1.5' : 'flex items-center justify-between bg-gray-50 rounded-2xl px-3 py-2 mb-3'}>
+        <button onClick={() => onDateChange(-1)} className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500">
+          <ChevronLeft size={18} />
+        </button>
+        <div className="text-center relative">
+          <button
+            onClick={() => {
+              const picker = document.getElementById('date-picker') as HTMLInputElement
+              if (picker) { picker.showPicker?.(); picker.focus() }
+            }}
+            className={`${compact ? 'text-[15px] text-slate-900 px-1.5' : `text-sm px-3 ${isToday ? 'text-primary-600' : 'text-gray-600 hover:text-primary-600'}`} font-semibold py-1 rounded-full transition-colors`}
+          >
+            {formatSelectedDate(selectedDate)}
+          </button>
+          {(() => {
+            const isPeakWeekNav = isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
+            const maxDate = isPeakWeekNav ? tomorrow : today
+            return (
+              <input
+                id="date-picker"
+                type="date"
+                value={selectedDate}
+                max={maxDate}
+                onChange={(e) => {
+                  if (e.target.value && e.target.value <= maxDate) onDateSelect(e.target.value)
+                }}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+              />
+            )
+          })()}
+          {!isToday && (
+            <p className="text-xs text-gray-400 pointer-events-none">{new Date(selectedDate).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}</p>
+          )}
+        </div>
+        <button
+          onClick={() => onDateChange(1)}
+          disabled={isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition') ? selectedDate >= tomorrow : isToday}
+          className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+  )
+
   return (
     <>
       {/* 標題 + 頭像
@@ -94,6 +140,7 @@ export default function ClientHeader({
           所以照身分分流：教練模式維持大頭貼＋姓名，學員端只留功能圖示。 */}
       <div className={`flex items-center justify-between ${isCoachMode ? 'mb-3' : 'mb-1'}`}>
         <div className="flex items-center gap-3">
+          {!isCoachMode && renderDateNav(true)}
           {isCoachMode && (c.avatar_url ? (
             <img
               src={c.avatar_url}
@@ -285,49 +332,7 @@ export default function ClientHeader({
         </div>
       </div>
 
-      {/* 日期導航 */}
-      <div className="flex items-center justify-between bg-gray-50 rounded-2xl px-3 py-2 mb-3">
-        <button onClick={() => onDateChange(-1)} className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500">
-          <ChevronLeft size={18} />
-        </button>
-        <div className="text-center relative">
-          <button
-            onClick={() => {
-              const picker = document.getElementById('date-picker') as HTMLInputElement
-              if (picker) { picker.showPicker?.(); picker.focus() }
-            }}
-            className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${isToday ? 'text-primary-600' : 'text-gray-600 hover:text-primary-600'}`}
-          >
-            {formatSelectedDate(selectedDate)}
-          </button>
-          {(() => {
-            const isPeakWeekNav = isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition')
-            const maxDate = isPeakWeekNav ? tomorrow : today
-            return (
-              <input
-                id="date-picker"
-                type="date"
-                value={selectedDate}
-                max={maxDate}
-                onChange={(e) => {
-                  if (e.target.value && e.target.value <= maxDate) onDateSelect(e.target.value)
-                }}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-              />
-            )
-          })()}
-          {!isToday && (
-            <p className="text-xs text-gray-400 pointer-events-none">{new Date(selectedDate).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })}</p>
-          )}
-        </div>
-        <button
-          onClick={() => onDateChange(1)}
-          disabled={isCompetition && (c.prep_phase === 'peak_week' || c.prep_phase === 'competition') ? selectedDate >= tomorrow : isToday}
-          className="p-1.5 rounded-full hover:bg-gray-200 transition-colors text-gray-500 disabled:opacity-30 disabled:hover:bg-transparent"
-        >
-          <ChevronRight size={18} />
-        </button>
-      </div>
+      {isCoachMode && renderDateNav(false)}
 
       {/* 明日預覽 Banner */}
       {selectedDate > today && (
@@ -357,7 +362,7 @@ export default function ClientHeader({
         const FULL_COUNTDOWN_DAYS = 168
         if (daysLeft > FULL_COUNTDOWN_DAYS) {
           return (
-            <div className="bg-white border border-slate-200 rounded-2xl px-4 py-2 mb-3">
+            <div className="pt-2 mt-1 border-t border-slate-100">
               <div className="flex items-center gap-2 text-xs">
                 <button
                   onClick={() => setShowPhaseSelector(!showPhaseSelector)}
