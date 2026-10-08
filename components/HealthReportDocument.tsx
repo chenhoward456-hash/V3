@@ -324,10 +324,13 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
   }, [latestLabs, client, hasHighRPE])
 
   // 系統建議跟目前方案對照：已在吃的標出來，免得看起來像要再加一份（補品名稱常是中英混寫：creatine/肌酸、魚油/Omega-3）
-  const SUPP_GROUPS = [/肌酸|creatine/i, /omega|魚油|fish/i, /鎂|magnes/i, /葉酸|mthf|b12|[bＢ] ?群/i, /d3|維生素 ?d|vit ?d/i, /鋅|zinc/i]
+  // TMG（甜菜鹼）跟活性葉酸走不同路徑，但目的同樣是降同半胱胺酸 → 一起列出來對照
+  const SUPP_GROUPS = [/肌酸|creatine/i, /omega|魚油|fish/i, /鎂|magnes/i, /葉酸|mthf|b12|[bＢ] ?群|tmg|ＴＭＧ|甜菜鹼/i, /d3|維生素 ?d|vit ?d/i, /鋅|zinc/i]
+  // 同一品早晚各一筆要分開列（魚油一顆早＋一顆晚＝一天兩顆），不能去重成「一顆」
   const alreadyTaking = (suggestionName: string) => {
     const groups = SUPP_GROUPS.filter((re) => re.test(suggestionName))
-    return [...new Set(supplements.filter((cur) => groups.some((re) => re.test(cur.name))).map((cur) => `${cur.name}${cur.dosage ? ` ${cur.dosage}` : ''}`))]
+    return supplements.filter((cur) => groups.some((re) => re.test(cur.name)))
+      .map((cur) => `${cur.name}${cur.dosage ? ` ${cur.dosage}` : ''}${cur.timing ? `（${cur.timing}）` : ''}`)
   }
 
   // ── Derived values ──
