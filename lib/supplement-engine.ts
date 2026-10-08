@@ -572,7 +572,9 @@ export function generateSupplementSuggestions(
         existingD.reason += ' 5-HTTLPR 基因型較敏感，維生素 D 與血清素合成密切相關，建議維持 50+ ng/mL。'
         existingD.priority = 'high'
       }
-    } else {
+    } else if (!(vitd?.value != null && vitd.value >= 40)) {
+      // 實測維生素 D 已 ≥40（最佳 40-60 起點）就不再因為基因型加一張 D3 卡 ——
+      // 2026-10-08：Howard 實測 59（教練筆記寫「可能補過頭、降劑量」）報告卻建議再補 D3 2000 IU
       suggestions.push({
         name: '維生素 D3 + K2',
         dosage: isHighRisk ? 'D3 4000 IU + K2 100mcg' : 'D3 2000 IU + K2 100mcg',

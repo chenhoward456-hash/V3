@@ -94,6 +94,10 @@ function judgeTrend(
 
   // 範圍型（如 TSH / 鐵蛋白 / 維生素D）：用「距離最佳區間中心」判斷
   if (typeof optimal === 'object') {
+    // 前後兩次都在最佳區間內 → 持平。否則 SHBG 24→38（都在 20-40 內）會因「離中心遠了」被標退步，
+    // 同一列建議卻寫「頂尖」。
+    const inside = (v: number) => v >= optimal.min && v <= optimal.max
+    if (inside(latest) && inside(prev)) return 'stable'
     const mid = (optimal.min + optimal.max) / 2
     const distLatest = Math.abs(latest - mid)
     const distPrev = Math.abs(prev - mid)

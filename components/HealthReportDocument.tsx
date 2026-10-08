@@ -271,6 +271,15 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
     return { from: oldest, to: newest, change: change.toFixed(1) }
   }, [bodyData])
 
+  // 變化 <5% 屬檢驗誤差範圍，不標進步/退步（例：HDL 69→68 不該叫「進步」、白蛋白 4.6→4.5 不該叫「退步」）
+  const TREND_NOISE_PCT = 5
+  const meaningfulTrend = (f?: { trend: string; changePercent: number | null }) =>
+    !f || f.trend === 'unknown' ? 'unknown'
+      : f.changePercent != null && Math.abs(f.changePercent) >= TREND_NOISE_PCT ? f.trend : 'stable'
+  const latestPanelDate = latestLabs.reduce((latest, r) => (r.date > latest ? r.date : latest), latestLabs[0]?.date || '')
+  // 表格混了好幾次抽血的最新值：不是最近一次那管血的，就把日期標出來
+  const olderDateTag = (date: string) => (date && date !== latestPanelDate ? `（${date} 測）` : '')
+
   // ── Supplement compliance (last 30 days) ──
   const compliance = useMemo(() => {
     if (!supplements.length) return null
@@ -280,11 +289,13 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
     const sinceStr = thirtyDaysAgo.toISOString().split('T')[0]
     const todayStr = today.toISOString().split('T')[0]
 
-    const recentLogs = supplementLogs.filter((l) => l.date >= sinceStr && l.date <= todayStr)
+    // 只算目前方案裡的補品：已停用（archived）補品的舊打卡不能算進分子，否則會出現 135% 這種數字
+    const currentIds = new Set(supplements.map((s) => s.id))
+    const recentLogs = supplementLogs.filter((l) => l.date >= sinceStr && l.date <= todayStr && currentIds.has(l.supplement_id))
     const daysWithData = new Set(recentLogs.map((l) => l.date)).size
     if (!daysWithData) return null
 
-    const takenCount = recentLogs.filter((l) => l.taken || l.completed).length
+    const takenCount = new Set(recentLogs.filter((l) => l.taken || l.completed).map((l) => `${l.supplement_id}|${l.date}`)).size
     const expectedCount = supplements.length * daysWithData
     return Math.round((takenCount / expectedCount) * 100)
   }, [supplements, supplementLogs])
@@ -311,6 +322,13 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
       prepPhase: (client.prep_phase as any) || null,
     })
   }, [latestLabs, client, hasHighRPE])
+
+  // 系統建議跟目前方案對照：已在吃的標出來，免得看起來像要再加一份（補品名稱常是中英混寫：creatine/肌酸、魚油/Omega-3）
+  const SUPP_GROUPS = [/肌酸|creatine/i, /omega|魚油|fish/i, /鎂|magnes/i, /葉酸|mthf|b12|[bＢ] ?群/i, /d3|維生素 ?d|vit ?d/i, /鋅|zinc/i]
+  const alreadyTaking = (suggestionName: string) => {
+    const groups = SUPP_GROUPS.filter((re) => re.test(suggestionName))
+    return [...new Set(supplements.filter((cur) => groups.some((re) => re.test(cur.name))).map((cur) => `${cur.name}${cur.dosage ? ` ${cur.dosage}` : ''}`))]
+  }
 
   // ── Derived values ──
   const hasGenetics = !!(client?.gene_mthfr || client?.gene_apoe || client?.gene_depression_risk)
@@ -399,11 +417,11 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
         {/* ── 本次重點（白話摘要，放最上面，讓非專業的學員 10 秒看懂）── */}
         {latestLabs.length > 0 && (() => {
           const improving = latestLabs
-            .filter(r => findingByName.get(r.test_name)?.trend === 'improving')
+            .filter(r => meaningfulTrend(findingByName.get(r.test_name)) === 'improving')
             .map(r => {
               const f = findingByName.get(r.test_name)
               const pct = f?.changePercent != null ? `（${f.changePercent > 0 ? '+' : ''}${f.changePercent.toFixed(0)}%）` : ''
-              return `${r.test_name}${pct}`
+              return `${r.test_name}${pct}${olderDateTag(r.date)}`
             })
           const flagged = latestLabs.filter(r => {
             const s = findingByName.get(r.test_name)?.latestStatus ?? r.status
@@ -436,7 +454,7 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
                       const why = plainWhy(r.test_name)
                       return (
                         <li key={r.id} className="report-text" style={{ marginBottom: 3 }}>
-                          <strong>{r.test_name}</strong>（{STATUS_LABELS[s] || s}）{why ? `— ${why}` : ''}
+                          <strong>{r.test_name}</strong>（{STATUS_LABELS[s] || s}）{olderDateTag(r.date)}{why ? `— ${why}` : ''}
                         </li>
                       )
                     })}
@@ -446,7 +464,7 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
                       const pct = f?.changePercent != null ? `${f.changePercent > 0 ? '+' : ''}${f.changePercent.toFixed(0)}%` : ''
                       return (
                         <li key={r.id} className="report-text" style={{ marginBottom: 3 }}>
-                          <strong>{r.test_name}</strong>（正常但下滑 {pct}、低於最佳）{why ? `— ${why}` : ''}
+                          <strong>{r.test_name}</strong>（正常但變差 {pct}、未達最佳 {f?.optimalText}）{olderDateTag(r.date)}{why ? `— ${why}` : ''}
                         </li>
                       )
                     })}
@@ -551,9 +569,13 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
               </thead>
               <tbody>
                 {latestLabs.map((r) => {
-                  const advice = getLabAdvice(r.test_name, r.value) || r.custom_advice || '-'
                   const f = findingByName.get(r.test_name)
-                  const trendLabel = f?.trend === 'improving' ? '↗ 進步' : f?.trend === 'declining' ? '↘ 退步' : ''
+                  const rawAdvice = getLabAdvice(r.test_name, r.value) || r.custom_advice || '-'
+                  // 建議文字沒分性別：系統判定「不在最佳」時不能還寫「頂尖」（女性 HDL／鐵蛋白最佳區間不同）
+                  const advice = f?.inOptimal === false && rawAdvice.includes('頂尖') && f.optimalText ? `正常，未達最佳 ${f.optimalText}` : rawAdvice
+                  const shownTrend = meaningfulTrend(f)
+                  // 'unknown'＝系統沒定義好壞方向（如游離睪固酮），只顯示百分比、不下結論
+                  const trendLabel = shownTrend === 'improving' ? '↗ 進步' : shownTrend === 'declining' ? '↘ 退步' : shownTrend === 'stable' ? '→ 持平' : ''
                   // 徽章狀態用 calculateLabStatus 即時重算（analyzeLabs 已含，且性別感知、會跳過非數值列），
                   // 不直接信 DB 的 lab_results.status（可能過期/過嚴，如維生素D 59 被標紅）。非數值/未分析列才回退 DB status。
                   const status = f?.latestStatus ?? r.status
@@ -565,9 +587,12 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
                       <td className="font-semibold">{r.test_name}</td>
                       <td className="text-mono">
                         {r.value} {r.unit}
+                        {r.date !== latestPanelDate && (
+                          <div className="text-small" style={{ color: '#b45309', marginTop: 2 }}>{r.date} 測</div>
+                        )}
                         {f?.previousValue != null && (
                           <div className="text-small" style={{ color: '#888', marginTop: 2 }}>
-                            前次 {f.previousValue}{f.changePercent != null ? `（${f.changePercent > 0 ? '+' : ''}${f.changePercent.toFixed(0)}%）` : ''} {trendLabel}
+                            前次{f.previousDate ? `（${f.previousDate}）` : ''} {f.previousValue}{f.changePercent != null ? `（${f.changePercent > 0 ? '+' : ''}${f.changePercent.toFixed(0)}%）` : ''} {trendLabel}
                           </div>
                         )}
                       </td>
@@ -589,7 +614,7 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
               </tbody>
             </table>
             <p className="report-note">
-              最近檢驗日期：{latestLabs.reduce((latest, r) => (r.date > latest ? r.date : latest), latestLabs[0]?.date || '-')}
+              最近一次抽血：{latestPanelDate || '-'}。表內每項取該項目最新一筆，不是這次抽的會在數值下標出日期。
             </p>
           </section>
         )}
@@ -696,7 +721,14 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
               <tbody>
                 {suggestions.map((s: SupplementSuggestion, i: number) => (
                   <tr key={i}>
-                    <td className="font-semibold">{s.name}</td>
+                    <td className="font-semibold">
+                      {s.name}
+                      {alreadyTaking(s.name).length > 0 && (
+                        <div className="text-small" style={{ color: '#15803d', fontWeight: 400, marginTop: 2 }}>
+                          目前已在吃：{alreadyTaking(s.name).join('、')}
+                        </div>
+                      )}
+                    </td>
                     <td>{s.dosage}</td>
                     <td>{s.timing}</td>
                     <td className="text-small">{s.reason}</td>
@@ -755,7 +787,7 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
             const s = f.latestStatus ?? r.status
             if (s === 'alert' || s === 'attention') return { name: r.test_name, reason: '追蹤這次數值的變化趨勢' }
             if (f.trend === 'declining' && f.inOptimal === false && f.changePercent != null && Math.abs(f.changePercent) >= 20) {
-              return { name: r.test_name, reason: '確認是否止跌、回到較佳範圍' }
+              return { name: r.test_name, reason: '這次變差、未達最佳，確認是否回到較佳範圍' }
             }
             return null
           }).filter(Boolean) as { name: string; reason: string }[]
