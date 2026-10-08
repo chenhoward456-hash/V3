@@ -518,7 +518,10 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
     items.push({ label, why })
   }
   // 重訓者 eGFR 被標要留意 → 下次加驗 Cystatin C（不受肌肉量影響，KDIGO 2024 PMID 38490803）
-  if (input.resistanceTrained && watch.some(w => w.name === 'eGFR' || w.name === '肌酸酐')) {
+  // eGFR 60-89 已改判正常（KDIGO，見 utils/labStatus.ts），但重訓者落在這段仍值得用 Cystatin C 確認一次
+  const latestEgfr = [...valid].filter(l => l.test_name === 'eGFR').sort((a, b) => b.date.localeCompare(a.date))[0]
+  const egfrBelow90 = latestEgfr != null && Number(latestEgfr.value) < 90
+  if (input.resistanceTrained && (egfrBelow90 || watch.some(w => w.name === 'eGFR' || w.name === '肌酸酐'))) {
     push('胱抑素 C（Cystatin C）', 'cystatin_c', '不受肌肉量影響，確認 eGFR 偏低是不是肌肉造成的')
   }
   // 這次要留意的一定要追（不管公版有沒有列）

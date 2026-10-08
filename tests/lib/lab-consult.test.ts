@@ -105,7 +105,7 @@ describe('要留意／已經很好／預測對答案', () => {
   })
 
   it('eGFR 被標要留意時，附上肌肉量／肌酸的說明', () => {
-    const x = build(pairs([['eGFR', 100, 70, 'mL/min/1.73m²']]))
+    const x = build(pairs([['eGFR', 100, 55, 'mL/min/1.73m²']]))
     expect(x.watch[0]?.note).toContain('肌酸')
   })
 
@@ -289,7 +289,7 @@ describe('2026-10-03 收尾：目標統一、重訓者 eGFR、用藥', () => {
     expect(before.watch.find(w => w.name === 'CPK')!.note).not.toMatch(/A 酸/)
     expect(scanMedicalCompliance(renderLabConsultText(c))).toEqual([])
   })
-  it('重訓者 eGFR 被標要留意 → 下次抽血加驗 Cystatin C', () => {
+  it('重訓者 eGFR <90（現在算正常）→ 下次抽血仍加驗 Cystatin C', () => {
     const labs = [{ test_name: 'eGFR', value: 82.57, unit: 'mL/min/1.73m²', date: D1 }]
     const t = buildLabConsult({ labs, gender: '男性', today: TODAY, resistanceTrained: true })!
     expect(t.next.items.some(i => /Cystatin C/.test(i.label))).toBe(true)

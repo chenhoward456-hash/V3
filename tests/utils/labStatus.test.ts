@@ -78,8 +78,13 @@ describe('calculateLabStatus', () => {
       expect(calculateLabStatus('eGFR', 100)).toBe('normal')
     })
 
-    it('should return alert for eGFR < 60', () => {
-      expect(calculateLabStatus('eGFR', 50)).toBe('alert')
+    it('eGFR 60-89 算正常（KDIGO：單獨 G2 不是腎病；肌肉量大者常被算低）', () => {
+      expect(calculateLabStatus('eGFR', 82.57)).toBe('normal')
+      expect(calculateLabStatus('eGFR', 60)).toBe('normal')
+    })
+    it('eGFR 45-59 要注意、<45 警示', () => {
+      expect(calculateLabStatus('eGFR', 50)).toBe('attention')
+      expect(calculateLabStatus('eGFR', 40)).toBe('alert')
     })
   })
 
