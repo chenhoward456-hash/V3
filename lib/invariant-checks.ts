@@ -6,12 +6,21 @@
  *   B. clients.training_plan 與 training_templates.plan_json 必須符合課表 JSON 結構
  *   C. 有 coach_macro_override 的學員不應再被 system 自動調 macro
  *   D. 有性別差異閾值血檢的學員，gender 不可為空（否則套男性閾值）
+ *   E. 同一份血檢只有一個答案：健康報告（lab-trend-analyzer）與血檢進退（longevity-lens）
+ *      不准對同一項講相反方向；學員抽血單的必驗項目都要出現在顧問卡的下次清單
  *
  * 入口：scripts/check-invariants.ts（手動 / CI）、app/api/cron/invariants（每日排程）
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { LAB_THRESHOLDS, FEMALE_VARIANTS } from '@/utils/labStatus'
+import { getLabCanonicalId } from '@/utils/labMatch'
+import { analyzeLabs } from '@/lib/lab-trend-analyzer'
+import { MARKERS, buildMarkerStory } from '@/lib/longevity-lens'
+import { loadLabConsult } from '@/lib/lab-consult-data'
+import { loadStudentLabOrder } from '@/lib/lab-order-data'
+import { resolveMarkerId } from '@/lib/lab-order'
+import { getTaiwanDate } from '@/lib/date-utils'
 
 export type Finding = { severity: 'violation' | 'warning'; check: string; detail: string }
 
@@ -153,6 +162,56 @@ async function checkGenderForLabs(supabase: SupabaseClient, findings: Finding[])
   }
 }
 
+// ── E. 同一份血檢只有一個答案 ──
+// 2026-10-08～09 Howard 連續抓到：同一個數字報告說持平、血檢進退說變差（SHBG）；
+// 顧問卡說要驗 Cystatin C、抽血單沒有。都是「同一件事有兩份算法、各自走偏」，
+// 而且都是他用眼睛看出來的。這條讓系統每天自己對一次。
+async function checkLabConsistency(supabase: SupabaseClient, findings: Finding[]) {
+  const today = getTaiwanDate()
+  const clients = await fetchAll<{ id: string; name: string; gender: string | null }>(
+    supabase, 'clients', 'id, name, gender', q => q.eq('is_active', true).eq('lab_enabled', true)
+  )
+  for (const c of clients) {
+    const labs = await fetchAll<{ test_name: string; value: number | string | null; unit: string | null; date: string }>(
+      supabase, 'lab_results', 'test_name, value, unit, date', q => q.eq('client_id', c.id)
+    )
+    if (labs.length === 0) continue
+    const gender = c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined
+
+    // E1. 方向不准相反
+    const byName: Record<string, { date: string; value: number; unit: string | null }[]> = {}
+    for (const l of labs) {
+      const v = typeof l.value === 'string' ? parseFloat(l.value) : l.value
+      if (v == null || !Number.isFinite(v)) continue
+      ;(byName[l.test_name] ??= []).push({ date: l.date, value: v, unit: l.unit })
+    }
+    const report = new Map(analyzeLabs(labs as never, { gender }).map(f => [f.testName, f]))
+    for (const name of Object.keys(MARKERS)) {
+      const pts = byName[name]
+      const f = report.get(name)
+      if (!pts || pts.length < 2 || !f) continue
+      const story = buildMarkerStory(name, pts, { weights: [], nutrition: [], training: [], wellness: [] }, today, gender)
+      const lens = story.direction
+      const rep = f.trend === 'improving' ? 'better' : f.trend === 'declining' ? 'worse' : null
+      if (lens && rep && lens !== rep) {
+        findings.push({ severity: 'violation', check: 'E. 血檢判讀一致性',
+          detail: `${c.name}｜${name}：健康報告判「${rep === 'better' ? '進步' : '退步'}」、血檢進退判「${lens === 'better' ? '變好' : '變差'}」` })
+      }
+    }
+
+    // E2. 抽血單的必驗 ⊆ 顧問卡的下次清單
+    const [consult, order] = await Promise.all([loadLabConsult(supabase, c.id), loadStudentLabOrder(supabase, c.id)])
+    if (!consult?.consult || !order || !order.enabled) continue
+    const key = (label: string) => resolveMarkerId(label) ?? getLabCanonicalId(label) ?? label.replace(/[（(].*$/, '').trim()
+    const nextKeys = new Set(consult.consult.next.items.map(i => key(i.label)))
+    const missing = order.must.map(m => m.label).filter(l => !nextKeys.has(key(l)))
+    if (missing.length) {
+      findings.push({ severity: 'violation', check: 'E. 血檢判讀一致性',
+        detail: `${c.name}｜抽血單必驗、顧問卡下次清單沒有：${missing.join('、')}` })
+    }
+  }
+}
+
 export async function runInvariantChecks(supabase: SupabaseClient): Promise<Finding[]> {
   const findings: Finding[] = []
   const checks: Array<[string, () => Promise<void>]> = [
@@ -160,6 +219,7 @@ export async function runInvariantChecks(supabase: SupabaseClient): Promise<Find
     ['B. training_plan / plan_json 結構', () => checkTrainingPlanShapes(supabase, findings)],
     ['C. coach_macro_override 優先權', () => checkCoachOverride(supabase, findings)],
     ['D. 性別相關血檢 gender 完整性', () => checkGenderForLabs(supabase, findings)],
+    ['E. 血檢判讀一致性', () => checkLabConsistency(supabase, findings)],
   ]
   for (const [label, fn] of checks) {
     try {
