@@ -64,6 +64,7 @@ import MyGoalEditor from '@/components/client/MyGoalEditor'
 import BodyProfileCard from '@/components/client/BodyProfileCard'
 import LongevityCard from '@/components/client/LongevityCard'
 import LabConsultCard from '@/components/client/LabConsultCard'
+import HealthWinHero from '@/components/client/HealthWinHero'
 import LongevityTeaser from '@/components/client/LongevityTeaser'
 import { getTaiwanDate } from '@/lib/date-utils'
 import LabOrderCard from '@/components/client/LabOrderCard'
@@ -2009,6 +2010,8 @@ export default function ClientDashboard() {
         {/* 血檢進退（長壽透鏡學員版）：V3 初衷——同一個人的血檢看得到進退，每個變化分得清真假、接得到那段期間做了什麼。
             放在身體檔案之前：這一頁最先回答「我的血檢在進步還是退步」 */}
         {/* 這次血檢顧問卡：最近一次抽血 60 天內才出現；抽完血不等教練審，先講這次重點／要留意／下次何時驗、驗什麼 */}
+        {/* 主角：預測成績＋一張圖＋一句話（2026-10-09「看起來沒有很爽」） */}
+        {view === 'lab' && <SectionErrorBoundary><HealthWinHero code={c.unique_code} /></SectionErrorBoundary>}
         {view === 'lab' && <SectionErrorBoundary><LabConsultCard code={c.unique_code} showNextList={!c.lab_enabled} /></SectionErrorBoundary>}
         {view === 'lab' && <SectionErrorBoundary><LongevityCard code={c.unique_code} /></SectionErrorBoundary>}
         {/* 下次抽血驗這些：學員打開自己就知道要驗什麼、多少錢、抽血前注意什麼（減法開單引擎） */}
