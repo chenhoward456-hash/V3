@@ -7,6 +7,7 @@ import { generateSupplementSuggestions, type SupplementSuggestion } from '@/lib/
 import { analyzeLabs } from '@/lib/lab-trend-analyzer'
 import { isGeneticOnce } from '@/lib/lab-due'
 import { isCompetitionMode, isHealthMode } from '@/lib/client-mode'
+import type { LabConsult } from '@/lib/lab-consult'
 
 // ---------------------------------------------------------------------------
 // Types (inline for standalone page)
@@ -168,6 +169,9 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
   const [labResults, setLabResults] = useState<LabResult[]>([])
   const [trainingLogs, setTrainingLogs] = useState<any[]>([])
   const [wellness, setWellness] = useState<any[]>([])
+  // 跟學員「血檢顧問卡」同一顆腦（lib/lab-consult.ts）：本次重點／下次驗什麼／補品依據都從這裡來，
+  // 報告不再自己另算一套（2026-10-09：同一次血檢，報告和顧問卡講出兩套不同的下次清單）
+  const [consult, setConsult] = useState<LabConsult | null>(null)
 
   // ── Fetch data ──
   useEffect(() => {
@@ -190,6 +194,14 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
       .catch((err) => setError(err.message || '無法載入資料'))
       .finally(() => setLoading(false))
   }, [clientId])
+
+  useEffect(() => {
+    if (!client?.unique_code) return
+    fetch(`/api/lab-consult?code=${encodeURIComponent(client.unique_code)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setConsult(d?.data?.consult ?? d?.consult ?? null))
+      .catch(() => setConsult(null)) // 讀不到就退回報告原本的算法，不擋整份報告
+  }, [client?.unique_code])
 
   // ── Latest lab results (deduplicated by test_name, newest wins) ──
   const latestLabs = useMemo(() => {
@@ -418,7 +430,39 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
         </header>
 
         {/* ── 本次重點（白話摘要，放最上面，讓非專業的學員 10 秒看懂）── */}
-        {latestLabs.length > 0 && (() => {
+        {consult && (
+          <section className="report-section" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 18px' }}>
+            <h2 style={{ marginTop: 0 }}>本次重點（{consult.drawDate} 抽血，{consult.drawCount} 項）</h2>
+            {consult.better.length > 0 && (
+              <p className="report-text" style={{ margin: '0 0 10px' }}>
+                <strong style={{ color: '#15803d' }}>✅ 真的變好：</strong>
+                {consult.better.map(x => `${x.name} ${x.from} → ${x.to}（${x.pct > 0 ? '+' : ''}${x.pct}%）`).join('、')}
+              </p>
+            )}
+            {(consult.worse.length > 0 || consult.watch.length > 0) && (
+              <div style={{ margin: '0 0 4px' }}>
+                <strong style={{ color: '#b45309' }}>⚠️ 要追蹤：</strong>
+                <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
+                  {consult.worse.map(x => (
+                    <li key={`w-${x.name}`} className="report-text" style={{ marginBottom: 3 }}>
+                      <strong>{x.name}</strong> {x.from} → {x.to}（{x.pct > 0 ? '+' : ''}{x.pct}%）{x.hint ? `— ${x.hint}` : ''}{x.medNote ? `；${x.medNote}` : ''}
+                    </li>
+                  ))}
+                  {consult.watch.filter(w => !consult.worse.some(x => x.name === w.name)).map(w => (
+                    <li key={`a-${w.name}`} className="report-text" style={{ marginBottom: 3 }}>
+                      <strong>{w.name}</strong> {w.value}{w.unit ? ` ${w.unit}` : ''}{w.idealText ? `（理想 ${w.idealText}）` : w.labRangeText ? `（檢驗所範圍 ${w.labRangeText}）` : ''}— {w.note}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p className="report-note" style={{ marginTop: 10, marginBottom: 0 }}>
+              {consult.noiseCount > 0 ? `另外 ${consult.noiseCount} 項有上下，但在個人正常波動內。` : ''}
+              {consult.good.count > 0 ? `${consult.good.count} 項在理想範圍。` : ''}詳細數值見下方血檢表。
+            </p>
+          </section>
+        )}
+        {!consult && latestLabs.length > 0 && (() => {
           const improving = latestLabs
             .filter(r => meaningfulTrend(findingByName.get(r.test_name)) === 'improving')
             .map(r => {
@@ -484,7 +528,16 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
         {/* ── 教練重點（開場總結，挪到最上面）── */}
         {client.coach_summary && (
           <section className="report-section" style={{ borderLeft: '3px solid #1a1a1a', paddingLeft: 18 }}>
-            <h2>教練重點</h2>
+            <h2>教練補充</h2>
+            {(() => {
+              // 手寫的會過期、系統算的不會：教練文字標了「更新至 YYYY/MM/DD」且早於最新抽血 → 提醒
+              const m = client.coach_summary!.match(/更新至\s*(\d{4})[/-](\d{1,2})[/-](\d{1,2})/)
+              const written = m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null
+              const latest = consult?.drawDate ?? latestPanelDate
+              return written && latest && written < latest ? (
+                <p className="report-note" style={{ color: '#b45309', marginTop: 0 }}>這段寫於 {written}，之後有 {latest} 的新血檢；以上方「本次重點」為準。</p>
+              ) : null
+            })()}
             <p className="report-text" style={{ whiteSpace: 'pre-line' }}><InlineBold text={client.coach_summary} /></p>
           </section>
         )}
@@ -684,18 +737,26 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
                   <th>名稱</th>
                   <th>劑量</th>
                   <th>服用時機</th>
-                  <th>原因</th>
+                  <th>{consult?.stack.length ? '血檢依據' : '原因'}</th>
                 </tr>
               </thead>
               <tbody>
-                {supplements.map((s) => (
-                  <tr key={s.id}>
-                    <td className="font-semibold">{s.name}</td>
-                    <td>{s.dosage || '-'}</td>
-                    <td>{s.timing || '-'}</td>
-                    <td className="text-small">{s.why || '-'}</td>
-                  </tr>
-                ))}
+                {supplements.map((s) => {
+                  // 學員常手打全形（活性Ｂ群／ＴＭＧ），顧問卡那邊合併過名稱 → 兩邊都 NFKC＋小寫再比
+                  const norm = (t: string) => t.normalize('NFKC').toLowerCase().trim()
+                  const st = consult?.stack.find(x => norm(x.name) === norm(s.name))
+                  const label: Record<string, string> = { caution: '⚠️ 要注意', 'no-indication': '沒有血檢依據', indicated: '有血檢依據', lifestyle: '生活型' }
+                  return (
+                    <tr key={s.id}>
+                      <td className="font-semibold">{s.name}</td>
+                      <td>{s.dosage || '-'}</td>
+                      <td>{s.timing || '-'}</td>
+                      <td className="text-small">
+                        {st ? <><strong>{label[st.status] || st.status}</strong>：{st.basis}{st.effect ? `｜${st.effect}` : ''}</> : (s.why || '-')}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
             {compliance != null && (
@@ -779,8 +840,20 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
           </section>
         )}
 
-        {/* ── 建議下次回診追蹤項目（依本次數據自動整理；只挑需追蹤的，穩定/基因型不重驗）── */}
-        {latestLabs.length > 0 && (() => {
+        {/* ── 下次抽血：跟學員顧問卡同一份清單 ── */}
+        {consult && consult.next.items.length > 0 && (
+          <section className="report-section">
+            <h2>下次抽血（{consult.next.date}）</h2>
+            <p className="report-note" style={{ marginTop: 0, marginBottom: 8 }}>{consult.next.reason}。供與醫師討論，非醫療診斷或處方。</p>
+            <ul style={{ margin: 0, paddingLeft: 20 }}>
+              {consult.next.items.map((x, i) => (
+                <li key={i} className="report-text" style={{ marginBottom: 3 }}><strong>{x.label}</strong> — {x.why}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {/* ── 舊算法（讀不到顧問卡時才用）：依本次數據自動整理；只挑需追蹤的，穩定/基因型不重驗 ── */}
+        {!consult && latestLabs.length > 0 && (() => {
           // 基因型指標一次檢測即可、終生不太變，不列入重驗（如 Lp(a)/APOE/MTHFR）。
           // 清單在 lib/lab-due.ts —— 教練晨報的「這次要盯」用同一份（紅線 6）。
           const retest = latestLabs.map(r => {

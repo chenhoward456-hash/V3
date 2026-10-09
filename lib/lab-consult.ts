@@ -560,7 +560,10 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
       latestByKey(valid),
       { gender, medications: input.medications, drawDate },
     ),
-    next: { date: addMonths(drawDate, months), months, reason, items },
+    // 教練已排好、而且在這次抽血之後的日期優先（原本顯示「建議 12/30」，同一張卡的補品段卻寫 1/16 驗收）
+    next: input.scheduledCheckup && input.scheduledCheckup > drawDate
+      ? { date: input.scheduledCheckup, months, reason: hasIssue ? `已排定；有 ${watch.length} 項要留意，到時看有沒有改善` : '已排定；這次沒有要留意的項目，到時追蹤就好', items }
+      : { date: addMonths(drawDate, months), months, reason, items },
   }
 }
 

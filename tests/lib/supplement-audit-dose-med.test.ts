@@ -25,3 +25,12 @@ describe('補品對帳：劑量與用藥（2026-10-03）', () => {
     expect(auditSupplement('南非', [], {}, { medications: [], today: '2026-10-03' }).status).not.toBe('caution')
   })
 })
+
+describe('維生素D 門檻跟最佳區間 40-60 走（2026-10-09）', () => {
+  const at = (v: number) => [{ test_name: '維生素D', value: v, date: '2026-03-20' }]
+  it('45 在理想內不叫補充、65 已高於理想', () => {
+    expect(auditSupplement('D3K2', at(45) as never, {}, { dosage: '2000' }).status).toBe('lifestyle')
+    expect(auditSupplement('D3K2', at(35) as never, {}, { dosage: '2000' }).status).toBe('indicated')
+    expect(auditSupplement('D3K2', at(65) as never, {}, { dosage: '2000' }).status).toBe('caution')
+  })
+})
