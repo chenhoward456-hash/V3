@@ -35,6 +35,7 @@ import { buildLabPrepMessage, hypothesesForCheckup } from '@/lib/lab-prep'
 import { lineBudgetAllows, noteLinePushed } from '@/lib/line-budget'
 import { studentExperimentText } from '@/lib/body-experiments'
 import { proposeBodyProfileEntries } from '@/lib/body-profile-miner'
+import { proposeCoachSummaryDrafts } from '@/lib/coach-summary-draft-cron'
 import { listActionableProposals, sweepExpiredProposals } from '@/lib/proposal-actions'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
@@ -862,6 +863,17 @@ export async function GET(request: NextRequest) {
       errors.push(...r.errors.map(e => `body profile: ${e}`))
     } catch (err) {
       errors.push(`body profile: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // ── 新血檢進來、教練補充還沒寫到那次 → 起草一筆，晨報列出來，回「套用 X」才寫入 ──
+  if (isMorning) {
+    try {
+      const r = await proposeCoachSummaryDrafts(supabase, today)
+      if (r.proposed > 0) logger.info(`Coach summary drafts: ${r.proposed}`)
+      errors.push(...r.errors.map(e => `coach summary draft: ${e}`))
+    } catch (err) {
+      errors.push(`coach summary draft: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 

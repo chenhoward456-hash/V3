@@ -205,8 +205,10 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
     for (const p of proposals) {
       lines.push(`  • ${p.name}：${describeProposal(p.items[0])}`)
       // 說明書條目彼此獨立，全部列出；熱量類多筆才是「同一決定被重算」
-      for (const extra of p.items.slice(1).filter(x => x.proposal_type === 'body_profile_entry')) lines.push(`      ${describeProposal(extra)}`)
-      const macroExtra = p.items.slice(1).filter(x => x.proposal_type !== 'body_profile_entry').length
+      const independent = (x: { proposal_type: string }) => x.proposal_type === 'body_profile_entry' || x.proposal_type === 'coach_summary_draft'
+      for (const extra of p.items.slice(1).filter(independent)) lines.push(`      ${describeProposal(extra)}`)
+      if (p.items.some(x => x.proposal_type === 'coach_summary_draft')) lines.push('      回「提案」看草稿全文')
+      const macroExtra = p.items.slice(1).filter(x => !independent(x)).length
       if (macroExtra > 0) lines.push(`      ⚠️ 還有 ${macroExtra} 筆，多半是同一個決定被重算，別一次全套`)
     }
     lines.push('     回「套用 <名字>」就改、「不要 <名字>」就退掉')

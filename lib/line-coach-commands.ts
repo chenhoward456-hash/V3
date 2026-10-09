@@ -118,6 +118,9 @@ function previewText(d: CoachingDraft): string {
 }
 
 /** 這筆提案在 LINE 上怎麼講 */
+/** 彼此獨立、不會疊加的提案：同一人多筆可以一個字一起套用 */
+const INDEPENDENT_TYPES = new Set(['body_profile_entry', 'coach_summary_draft'])
+
 function proposalLine(p: ProposalRow, name: string): string {
   const age = Math.round((Date.now() - Date.parse(p.proposed_at)) / 86400000)
   return `• ${name}：${describeProposal(p)}（${age === 0 ? '今天' : `${age} 天前`}）`
@@ -265,20 +268,29 @@ export async function tryCoachCommand(
     const lines = ['📥 等你處理的提案：', '']
     for (const [cid, ps] of Object.entries(byClient)) {
       lines.push(proposalLine(ps[0], nameOf[cid] ?? '?'))
-      if (ps.length > 1) lines.push(`   ⚠️ 這個人還有 ${ps.length - 1} 筆，要開後台逐筆看`)
+      const more = ps.slice(1).filter(p => !INDEPENDENT_TYPES.has(p.proposal_type))
+      for (const extra of ps.slice(1).filter(p => INDEPENDENT_TYPES.has(p.proposal_type))) lines.push(`   ${describeProposal(extra)}`)
+      if (more.length > 0) lines.push(`   ⚠️ 這個人還有 ${more.length} 筆，要開後台逐筆看`)
+      // 草稿要先看到全文才能一個字套用
+      for (const d of ps.filter(p => p.proposal_type === 'coach_summary_draft')) {
+        lines.push('', `—— ${nameOf[cid] ?? '?'} 教練補充草稿 ——`, String((d.proposed_changes as { coach_summary?: string } | null)?.coach_summary ?? ''), '')
+      }
     }
     lines.push('', '回「套用 <名字>」就改、「不要 <名字>」就退掉。')
-    await replyMessage(replyToken, [{ type: 'text', text: lines.join('\n') }])
+    // LINE 單則上限 5000 字；草稿多的時候截掉尾巴，提示去後台看
+    let text = lines.join('\n')
+    if (text.length > 4800) text = text.slice(0, 4700) + '\n\n…（太長，其餘草稿開後台看）\n回「套用 <名字>」就改、「不要 <名字>」就退掉。'
+    await replyMessage(replyToken, [{ type: 'text', text }])
     return true
   }
 
   const targetId = Object.keys(nameOf).find(id => nameOf[id] === command.name)
   const mineAll = actionable.filter(p => p.client_id === targetId)
 
-  // 身體說明書條目彼此獨立（不同 key、不會疊加），套用＝全部一起寫；退掉同理。
+  // 身體說明書條目、教練補充草稿彼此獨立（不會疊加），套用＝全部一起寫；退掉同理。
   // 熱量類提案走下面原本那套「多筆不准一個字決定」的保護。
-  const bpItems = mineAll.filter(p => p.proposal_type === 'body_profile_entry')
-  const mine = mineAll.filter(p => p.proposal_type !== 'body_profile_entry')
+  const bpItems = mineAll.filter(p => INDEPENDENT_TYPES.has(p.proposal_type))
+  const mine = mineAll.filter(p => !INDEPENDENT_TYPES.has(p.proposal_type))
   const bpDone: string[] = []
   if (bpItems.length > 0 && (command.kind === 'approve' || command.kind === 'reject')) {
     for (const p of bpItems) {
@@ -292,8 +304,8 @@ export async function tryCoachCommand(
       await replyMessage(replyToken, [{
         type: 'text',
         text: command.kind === 'approve'
-          ? `✅ ${command.name} 寫進說明書了：\n${bpDone.map(x => `・${x.replace(/^身體說明書：/, '')}`).join('\n')}`
-          : `好，${command.name} 的 ${bpDone.length} 條說明書提案退掉了（60 天內不會再提）。`,
+          ? `✅ ${command.name} 寫進去了：\n${bpDone.map(x => `・${x.replace(/^身體說明書：/, '')}`).join('\n')}`
+          : `好，${command.name} 的 ${bpDone.length} 筆提案退掉了（同一條不會再提）。`,
       }])
       return true
     }
