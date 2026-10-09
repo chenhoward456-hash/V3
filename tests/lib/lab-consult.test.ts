@@ -43,7 +43,7 @@ const MIXED: Row[] = [
   ['HbA1c', 5.2, 5.3, '%'],              // +2%，RCV≈9% → 雜訊
   ['LDL-C', 69, 85, 'mg/dL'],            // +23%，RCV≈25% → 雜訊（正常值裡的漂移）
   ['空腹胰島素', 4, 9.5, 'µIU/mL'],       // +138%，RCV≈71% → 真的變差，而且 9.5 超出標準
-  ['三酸甘油酯', 34, 63, 'mg/dL'],        // +85% 真變化，但前後都 <100 → 不分好壞
+  ['三酸甘油酯', 25, 50, 'mg/dL'],        // +100% 真變化，但前後都 <60（最佳區間，utils/labStatus）→ 不分好壞
 ]
 
 const build = (labs = pairs(MIXED), extra: Partial<Parameters<typeof buildLabConsult>[0]> = {}) =>
@@ -67,7 +67,7 @@ describe('這次重點：真變化 vs 正常波動', () => {
     expect(c.noiseCount).toBe(3)
   })
 
-  it('真的變了但前後都在很好的範圍 → 不標變差（三酸甘油酯 34→63）', () => {
+  it('真的變了但前後都在很好的範圍 → 不標變差（三酸甘油酯 25→50）', () => {
     expect(c.shiftedInRange.map(x => x.name)).toEqual(['三酸甘油酯'])
   })
 
