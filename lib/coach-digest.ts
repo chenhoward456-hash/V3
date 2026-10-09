@@ -174,6 +174,7 @@ export function buildCoachDigest(input: CoachDigestInput): CoachDigest {
     const overdue = labsDue.filter(l => l.daysUntil !== null && l.daysUntil < 0).length
     lines.push(overdue > 0 ? `🩸 血檢：${overdue} 個逾期` : '🩸 血檢該回檢了：')
     for (const l of labsDue) lines.push(...formatLabDueLines(l))
+    lines.push(`     回「回檢 ${labsDue[0].name}」看要傳給他的抽血單，「發回檢 ${labsDue[0].name}」直接送出`)
     lines.push('')
   }
 
