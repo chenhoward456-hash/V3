@@ -23,7 +23,9 @@ const md = (d: string) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
 const fmt = (v: number) => (Math.abs(v) >= 100 ? Math.round(v).toString() : (Math.round(v * 10) / 10).toString())
 
 /** 折線＋目標線。點少（2–6 個）所以不用圖表庫，手畫 SVG 才能把「目標線」和「猜中的那一點」做成主角 */
-function WinChart({ points, target, unit }: { points: LabPoint[]; target: number | null; unit: string }) {
+function WinChart({ points, target, unit, win = false }: { points: LabPoint[]; target: number | null; unit: string; win?: boolean }) {
+  // 猜中那一點用綠色＝「贏了」的訊號；不是猜中（例如只是真的變好）就維持主色
+  const hit = win ? '#059669' : '#1E4A73'
   const W = 360, H = 210, padX = 28, padTop = 36, padBottom = 32
   const vals = points.map(p => p.value).concat(target != null ? [target] : [])
   const lo = Math.min(...vals), hi = Math.max(...vals)
@@ -43,14 +45,14 @@ function WinChart({ points, target, unit }: { points: LabPoint[]; target: number
       <path d={path} fill="none" stroke="#1E4A73" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
       {points.map((p, i) => (
         <g key={p.date}>
-          {i === last && <circle cx={x(i)} cy={y(p.value)} r={10} fill="white" stroke="#1E4A73" strokeWidth="1.5" />}
-          <circle cx={x(i)} cy={y(p.value)} r={i === last ? 5 : 3.5} fill="#1E4A73" />
+          {i === last && <circle cx={x(i)} cy={y(p.value)} r={10} fill={win ? '#d1fae5' : 'white'} stroke={hit} strokeWidth="1.5" />}
+          <circle cx={x(i)} cy={y(p.value)} r={i === last ? 5 : 3.5} fill={i === last ? hit : '#1E4A73'} />
           <text x={x(i)} y={H - 9} textAnchor="middle" fontSize="14" fill="#64748b">{
             // 跨年才標年份（8/13 其實是去年）：第一點、或跟前一點不同年
             i === 0 || p.date.slice(0, 4) !== points[i - 1].date.slice(0, 4) ? `${p.date.slice(2, 4)}/${md(p.date)}` : md(p.date)
           }</text>
           <text x={x(i)} y={y(p.value) - (i === last ? 17 : 12)} textAnchor="middle" fontSize={i === last ? 18 : 15} fontWeight={i === last ? 700 : 500}
-            fill={i === last ? '#0f172a' : '#475569'} style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(p.value)}</text>
+            fill={i === last ? (win ? '#047857' : '#0f172a') : '#475569'} style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(p.value)}</text>
         </g>
       ))}
     </svg>
@@ -129,7 +131,7 @@ export default function HealthWinHero({ code }: { code: string }) {
             <span className="text-xs font-medium text-primary-600">- - 目標 {heroHyp.expected_direction === 'down' ? '≤' : '≥'}{fmt(heroHyp.expected_value)}</span>
           )}
         </div>
-        <WinChart points={story.points} target={heroHyp?.expected_value ?? null} unit={unit} />
+        <WinChart points={story.points} target={heroHyp?.expected_value ?? null} unit={unit} win={heroHyp?.grade.status === 'confirmed'} />
       </div>
 
       <p className="px-6 py-5 text-sm leading-relaxed text-slate-200">{sentence}</p>
