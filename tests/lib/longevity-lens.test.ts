@@ -204,10 +204,19 @@ describe('judgeDirection：直接講變好還是變差', () => {
     expect(judgeDirection(MARKERS.SHBG, ch(30, 15, 9.7), '男性')).toBe('worse')
     expect(judgeDirection(MARKERS.SHBG, ch(24.4, 38.4, 9.7), '女性')).toBeNull()
   })
-  it('越低越好：同半胱胺酸 15→9 → 變好；三酸甘油酯 34→63 都在很好範圍 → 不判；80→150 → 變差', () => {
+  it('越低越好：同半胱胺酸 15→9 → 變好；三酸甘油酯 25→50 都在 <60 → 不判；34→63 出了最佳 → 變差；80→150 → 變差', () => {
     expect(judgeDirection(MARKERS['同半胱胺酸'], ch(15, 9, 8.3))).toBe('better')
-    expect(judgeDirection(MARKERS['三酸甘油酯'], ch(34, 63, 19.9))).toBeNull()
+    expect(judgeDirection(MARKERS['三酸甘油酯'], ch(25, 50, 19.9))).toBeNull()
+    expect(judgeDirection(MARKERS['三酸甘油酯'], ch(34, 63, 19.9))).toBe('worse')
     expect(judgeDirection(MARKERS['三酸甘油酯'], ch(80, 150, 19.9))).toBe('worse')
+  })
+  it('最佳區間跟 utils/labStatus 同一張表（2026-10-09 統一）', () => {
+    expect([MARKERS['HDL-C'].optimalMin, MARKERS['HDL-C'].optimalMax]).toEqual([40, 60])
+    expect(MARKERS['三酸甘油酯'].optimalMax).toBe(60)
+    expect([MARKERS['維生素D'].optimalMin, MARKERS['維生素D'].optimalMax]).toEqual([40, 60])
+    // HDL U 型：50→58 都在區間內 → 不判；55→68 出了上緣 → 變差
+    expect(judgeDirection(MARKERS['HDL-C'], ch(50, 58, 8))).toBeNull()
+    expect(judgeDirection(MARKERS['HDL-C'], ch(45, 68, 8))).toBe('worse')
   })
   it('維生素D 34→59 往最佳範圍走 → 變好；在波動內 → null', () => {
     expect(judgeDirection(MARKERS['維生素D'], ch(34, 59, 7.1))).toBe('better')

@@ -7,6 +7,7 @@
  * 純函式，不碰 DB；資料由 /api/admin/longevity 組好丟進來。
  */
 
+import { LAB_OPTIMAL_RANGES, HIGHER_IS_BETTER } from '@/utils/labStatus'
 export type Horseman = 'cardio' | 'metabolic' | 'neuro' | 'cancer' | 'organ' | 'support'
 
 export const HORSEMAN_META: Record<Horseman, { label: string; why: string }> = {
@@ -90,6 +91,28 @@ export const MARKERS: Record<string, MarkerSpec> = {
   白血球: { horseman: 'organ', cvi: 10.4, cviDoi: 'PMID:29605821', cviMale: 7.96, cviFemale: 12.82, better: 'range', retestDays: 365 },
   血小板: { horseman: 'organ', cvi: 7.22, cviDoi: 'PMID:29605821', better: 'range', retestDays: 365 },
   MCV: { horseman: 'organ', cvi: 0.72, cviDoi: 'PMID:29605821', better: 'range', retestDays: 365 },
+}
+
+// ── 最佳區間只有一份：讀 utils/labStatus 的 LAB_OPTIMAL_RANGES（6/27 對帳過的那張）──
+// 2026-10-09：這張表原本自帶一套（HDL 40 以上越高越好、TG <100、ApoB <60、LDL <100、胰島素 <6、
+// 同半胱胺酸 <10、維生素D 40-80），跟健康報告講的不一樣 —— Howard HDL 68，一邊說好、一邊說偏高。
+// 只覆寫「這裡本來就有設最佳區間」的項目；沒設的不新增（避免改變「好的舊數字不催重測」的行為）。
+for (const [name, spec] of Object.entries(MARKERS)) {
+  if (spec.optimalMin == null && spec.optimalMax == null) continue
+  const o = LAB_OPTIMAL_RANGES[name]
+  if (o == null) continue
+  if (typeof o === 'object') {
+    spec.optimalMin = o.min
+    spec.optimalMax = o.max
+    // U 型區間（HDL 40-60）：不再是「越高越好」，兩次都在區間內不分好壞，出了區間看離區間多遠
+    if (spec.better === 'higher' || spec.better === 'lower') spec.better = 'range'
+  } else if (HIGHER_IS_BETTER.has(name)) {
+    spec.optimalMin = o
+    spec.optimalMax = undefined
+  } else {
+    spec.optimalMax = o
+    spec.optimalMin = undefined
+  }
 }
 
 /** 依性別取 CVi（有分開存就用分開的） */
