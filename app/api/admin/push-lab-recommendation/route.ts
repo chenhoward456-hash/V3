@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   const { data: c } = await supabase
     .from('clients')
-    .select('id, name, gender, client_mode, lab_results(test_name, value, unit, date, status)')
+    .select('id, name, gender, client_mode, training_enabled, lab_results(test_name, value, unit, date, status, reference_range)')
     .eq('id', clientId)
     .maybeSingle()
   if (!c) return NextResponse.json({ error: '找不到學員' }, { status: 404 })
@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
     basePrice: template.base_price,
     gender: c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined,
     today: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0],
+    resistanceTrained: !!c.training_enabled,
   })
 
   const messages: string[] = []

@@ -27,7 +27,7 @@ export type StudentLabOrder =
 export async function loadStudentLabOrder(supabase: SupabaseClient, clientDbId: string): Promise<StudentLabOrder | null> {
   const { data: c } = await supabase
     .from('clients')
-    .select('id, gender, lab_enabled, next_checkup_date, lab_results(test_name, value, unit, date, status)')
+    .select('id, gender, lab_enabled, next_checkup_date, training_enabled, lab_results(test_name, value, unit, date, status, reference_range)')
     .eq('id', clientDbId)
     .maybeSingle()
   if (!c) return null
@@ -49,6 +49,7 @@ export async function loadStudentLabOrder(supabase: SupabaseClient, clientDbId: 
     basePrice: template.base_price,
     gender: c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined,
     today: getTaiwanDate(),
+    resistanceTrained: !!c.training_enabled,
   })
 
   // 引擎的 why 是寫給教練的，學員版拿掉內部用語（例：「公版漏了這項。」）再過合規

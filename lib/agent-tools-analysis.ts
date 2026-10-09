@@ -40,7 +40,7 @@ type Client = {
 
 /** 名字或 unique_code 都能找到人 —— 教練在 LINE 上不會打 UUID */
 async function resolveClient(supabase: SupabaseClient, ref: string): Promise<Client | null> {
-  const sel = 'id, name, gender, calories_target, protein_target, goal_type, target_weight, target_date, next_checkup_date'
+  const sel = 'id, name, gender, calories_target, protein_target, goal_type, target_weight, target_date, next_checkup_date, training_enabled'
   for (const col of ['id', 'unique_code', 'name'] as const) {
     // UUID 只可能是 id；名字/代碼走另外兩欄
     if (col === 'id' && !/^[0-9a-f-]{36}$/i.test(ref)) continue
@@ -199,7 +199,7 @@ export async function buildLabOrderForClient(supabase: SupabaseClient, ref: stri
   if (!c) return { error: `找不到學員：${ref}` }
 
   const [{ data: labs }, { data: tpls }] = await Promise.all([
-    supabase.from('lab_results').select('test_name, value, unit, date, status').eq('client_id', c.id),
+    supabase.from('lab_results').select('test_name, value, unit, date, status, reference_range').eq('client_id', c.id),
     supabase.from('lab_panel_templates').select('gender, goal_orientation, add_on_items, base_price'),
   ])
   type Tpl = { gender: string | null; goal_orientation: string | null; add_on_items: TemplateItem[] | null; base_price: number | null }
@@ -214,6 +214,7 @@ export async function buildLabOrderForClient(supabase: SupabaseClient, ref: stri
     basePrice: tpl.base_price,
     gender: c.gender === '女性' ? '女性' : c.gender === '男性' ? '男性' : undefined,
     today: TW_TODAY(),
+    resistanceTrained: !!(c as { training_enabled?: boolean | null }).training_enabled,
   })
 
   const line = (l: { label: string; price: number | null; why: string }) =>

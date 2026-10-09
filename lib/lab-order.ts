@@ -34,7 +34,8 @@
  */
 
 import { getLabCanonicalId } from '@/utils/labMatch'
-import { calculateLabStatus, isInOptimalRange, getOptimalRangeText } from '@/utils/labStatus'
+import { calculateLabStatus, isInOptimalRange, getOptimalRangeText, LAB_THRESHOLDS } from '@/utils/labStatus'
+import { sideFromReferenceRange } from '@/utils/labReferenceRange'
 import { isGeneticOnce } from './lab-due'
 import { DERIVABLE_MARKERS } from './lab-derive'
 import type { LabResultRow } from './lab-trend-analyzer'
@@ -80,6 +81,7 @@ const ROUTINE_MARKERS = [
 export type OrderRule =
   | 'follow-up' | 'companion' | 'never-tested' | 'stale'
   | 'genetic-once' | 'derivable' | 'recent-optimal' | 'deferred' | 'risk-linked'
+  | 'out-of-range' | 'muscle-check'
 
 export type Bucket = 'must' | 'defer' | 'skip'
 
@@ -135,6 +137,8 @@ export type BuildLabOrderInput = {
   gender?: '男性' | '女性'
   /** 台灣日 YYYY-MM-DD */
   today: string
+  /** 有規律重訓（clients.training_enabled）：肌酸酐／eGFR 被肌肉量干擾時加開 Cystatin C */
+  resistanceTrained?: boolean
 }
 
 type HistoryEntry = {
@@ -335,6 +339,50 @@ export function buildLabOrder(input: BuildLabOrderInput): LabOrderPlan {
     }
   }
 
+  // ── 公版沒列、但最近一次抽血超出範圍的：一定要追 ──
+  // 2026-10-09 統一清單：原本只有學員顧問卡（lib/lab-consult.ts）會加，開單／學員抽血單／回檢邀請沒有，
+  // 同一個人兩份「下次驗什麼」不一樣（Howard CPK 397 只出現在顧問卡）。
+  // 有系統標準的照 calculateLabStatus；沒標準的（CPK、LDH…）只照檢驗所印的範圍，不發明門檻。
+  const lastDraw = labs.reduce((m, l) => (l.date > m ? l.date : m), '')
+  for (const l of labs) {
+    if (l.date !== lastDraw) continue
+    const id = getLabCanonicalId(l.test_name)
+    const key = id ?? l.test_name
+    if (byId.has(key) || (id && isGeneticOnce(l.test_name))) continue
+    // 常規項目（肝腎血脂血糖血球）有異常時，底盤套餐本來就會判「該開」（見 basePackage），不另列單項
+    if (id && ROUTINE_MARKERS.includes(id)) continue
+    const v = typeof l.value === 'string' ? parseFloat(l.value) : l.value
+    if (!Number.isFinite(v)) continue
+    const flagged = l.test_name in LAB_THRESHOLDS
+      ? calculateLabStatus(l.test_name, v, gender) !== 'normal'
+      : sideFromReferenceRange(v, l.reference_range) != null
+    if (!flagged) continue
+    const line: LabOrderLine = {
+      label: CANONICAL_LABEL[key] ?? l.test_name, canonicalId: id, price: null,
+      rule: 'out-of-range', bucket: 'must',
+      why: `${l.date} 是 ${v}，超出範圍，要看有沒有回來`,
+    }
+    lines.push(line)
+    byId.set(key, line)
+  }
+
+  // ── 重訓者：肌酸酐偏高或 eGFR <90 → 加開 Cystatin C ──
+  // 肌酸酐（和用它推算的 eGFR）受肌肉量、補充肌酸影響；Cystatin C 不受影響（KDIGO 2024 PMID 38490803）。
+  // 規則原本只寫在 lib/lab-consult.ts，2026-10-09 搬來這裡＝所有清單共用一份。
+  if (input.resistanceTrained && !byId.has('cystatin_c')) {
+    const egfr = hist.get('egfr')
+    const cr = hist.get('creatinine')
+    if ((egfr && egfr.value < 90) || (cr && !cr.isNormal)) {
+      const line: LabOrderLine = {
+        label: CANONICAL_LABEL.cystatin_c, canonicalId: 'cystatin_c', price: null,
+        rule: 'muscle-check', bucket: 'must',
+        why: `${cr && !cr.isNormal ? `肌酸酐 ${cr.value} 偏高` : `eGFR ${egfr!.value}`}，有重訓的人常被肌肉量干擾；Cystatin C 不受肌肉量影響，確認是不是肌肉造成的`,
+      }
+      lines.push(line)
+      byId.set('cystatin_c', line)
+    }
+  }
+
   // ── 第三輪：上游還沒有結果的，下游先不要開 ──
   for (const line of lines) {
     if (line.bucket === 'skip' || !line.canonicalId) continue
@@ -389,4 +437,5 @@ const CANONICAL_LABEL: Record<string, string> = {
   fasting_insulin: '空腹胰島素',
   fasting_glucose: '空腹血糖',
   homocysteine: '同半胱胺酸',
+  cystatin_c: '胱抑素 C（Cystatin C）',
 }

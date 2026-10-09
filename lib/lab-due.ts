@@ -61,6 +61,8 @@ export type LabDueClientInput = {
   gender?: string | null
   /** clients.next_checkup_date */
   next_checkup_date?: string | null
+  /** clients.training_enabled：開單時重訓者加 Cystatin C */
+  training_enabled?: boolean | null
   /** 最新一筆 lab_panel_notes.next_review_date */
   panel_next_review_date?: string | null
   labs: LabResultRow[]
@@ -199,6 +201,7 @@ export function evaluateLabDue(
             basePrice: c.templateBasePrice,
             gender: normalizeGender(c.gender),
             today,
+            resistanceTrained: !!c.training_enabled,
           })
         : null,
     },
