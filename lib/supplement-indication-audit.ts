@@ -179,8 +179,9 @@ const RULES: { match: string[]; evaluate: (c: Ctx) => IndicationVerdict }[] = [
     evaluate: (c) => {
       const d = c.lab(['維生素d', 'vitamin d', '25-oh', '25(oh)'])
       if (d?.value == null) return none('無維生素D資料')
-      if (d.value < 50) return ok(`維生素D ${d.value} 偏低 → 補充`)
-      if (d.value > 70) return warn(`維生素D ${d.value} 已偏高，補 D 指徵不足（K2 想留可另計）`)
+      // 門檻跟 utils/labStatus 的最佳區間 40-60 走（6/27 對帳從 60-80 下修，這裡原本還是 <50／>70）
+      if (d.value < 40) return ok(`維生素D ${d.value} 偏低 → 補充`)
+      if (d.value > 60) return warn(`維生素D ${d.value} 已高於理想 40-60，補 D 指徵不足（K2 想留可另計）`)
       // 2026-10-03：只看血檢不看劑量 → Howard D 59 吃 5000 IU 被判「維持即可」，長期會一路往上
       if (c.dose != null && c.dose >= 4000) return warn(`維生素D ${d.value} 已在理想範圍，每天 ${c.dose} IU 偏高，長期會一路往上 → 降到約 2000 IU 維持，下次抽血確認`)
       return life(`維生素D ${d.value} 尚可，維持即可`)

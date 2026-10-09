@@ -319,3 +319,13 @@ describe('你在吃的保健品（2026-10-03）', () => {
     expect(scanMedicalCompliance(renderLabConsultText(c))).toEqual([])
   })
 })
+
+describe('下次抽血日（2026-10-09）', () => {
+  it('教練已排、且在這次抽血之後 → 卡片的下次日期用排定日', () => {
+    const labs = [{ test_name: '空腹血糖', value: 95, unit: 'mg/dL', date: '2026-09-30' }]
+    const c = buildLabConsult({ labs, gender: '男性', today: '2026-10-09', scheduledCheckup: '2027-01-16' })!
+    expect(c.next.date).toBe('2027-01-16')
+    const d = buildLabConsult({ labs, gender: '男性', today: '2026-10-09', scheduledCheckup: '2026-09-01' })!
+    expect(d.next.date).not.toBe('2026-09-01')
+  })
+})
