@@ -28,12 +28,16 @@ import {
 } from './proposal-actions'
 import { handleNaturalLog, type LineClient } from './line-handlers'
 import { buildCoachingDrafts, sendCoachMessage, type CoachingDraft } from './coaching-drafts'
+import { loadRetestInvite } from './retest-invite'
+import { getTaiwanDate } from './date-utils'
 
 export type CoachCommand =
   | { kind: 'list_proposals' }
   | { kind: 'list_messages' }
   | { kind: 'preview_message'; name: string }
   | { kind: 'send_message'; name: string }
+  | { kind: 'preview_retest'; name: string }
+  | { kind: 'send_retest'; name: string }
   | { kind: 'approve'; name: string }
   | { kind: 'reject'; name: string }
   | { kind: 'proxy_log'; name: string; content: string }
@@ -56,6 +60,7 @@ export function looksLikeCoachCommand(text: string): boolean {
     || /^(訊息|草稿|本週訊息)$/.test(t)
     || /^(訊息|草稿)\s*\S/.test(t)
     || /^(發|送|發送)\s*\S/.test(t)
+    || /^回檢\s*\S/.test(t)
 }
 
 export function parseCoachCommand(text: string, knownNames: string[]): CoachCommand | null {
@@ -71,6 +76,13 @@ export function parseCoachCommand(text: string, knownNames: string[]): CoachComm
   if (msgOne) {
     const name = msgOne[1].trim()
     return knownNames.some(n => n && n === name) ? { kind: 'preview_message', name } : null
+  }
+  // 「回檢 謝佳峻」看要傳給學員的抽血單、「發回檢 謝佳峻」送出（名字同樣要完全相符）
+  const retest = t.match(/^(發|送|發送)?回檢\s+(.+)$/)
+  if (retest) {
+    const name = retest[2].trim()
+    if (!knownNames.some(n => n && n === name)) return null
+    return retest[1] ? { kind: 'send_retest', name } : { kind: 'preview_retest', name }
   }
   const sendOne = t.match(/^(?:發|送|發送)\s+(.+)$/)
   if (sendOne) {
@@ -202,6 +214,31 @@ export async function tryCoachCommand(
       text: `本週 ${drafts.length} 個人：\n\n${lines.join('\n')}\n\n`
         + `打「訊息 ${drafts[0].name}」看全文，看過再打「發 ${drafts[0].name}」送出。`,
     }])
+    return true
+  }
+
+  if (command.kind === 'preview_retest' || command.kind === 'send_retest') {
+    const cid = Object.keys(nameOf).find((id) => nameOf[id] === command.name)
+    const invite = cid ? await loadRetestInvite(supabase, cid, getTaiwanDate()) : null
+    if (!cid || !invite) {
+      await replyMessage(replyToken, [{ type: 'text', text: `${command.name} 沒有開血檢追蹤，或算不出要驗的項目。` }])
+      return true
+    }
+    if (command.kind === 'preview_retest') {
+      await replyMessage(replyToken, [{
+        type: 'text',
+        text: `要傳給 ${invite.name} 的回檢邀請：\n\n────────\n${invite.text}\n────────\n\n看過沒問題，打「發回檢 ${invite.name}」送出。`,
+      }])
+      return true
+    }
+    const outcome = await sendCoachMessage(supabase, { clientId: cid, message: invite.text, mode: 'retest_invite' })
+    if (!outcome.ok) {
+      const extra = outcome.compliance?.length ? `\n\n命中：${outcome.compliance.map((c) => c.term).join('、')}` : ''
+      await replyMessage(replyToken, [{ type: 'text', text: `沒發出去：${outcome.error}${extra}` }])
+      return true
+    }
+    const via = outcome.delivered ? (outcome.method === 'web_push' ? '推播' : 'LINE') : '沒推成，但已存進他的儀表板'
+    await replyMessage(replyToken, [{ type: 'text', text: `已送給 ${invite.name}（${via}）\n\n────────\n${invite.text}` }])
     return true
   }
 
