@@ -154,7 +154,7 @@ export function getLabAdvice(testName: string, value: number): string {
     case '皮質醇': return value >= 8 && value <= 12 ? '皮質醇頂尖' : value >= 6 && value <= 18 ? '正常，目標 8-12 注意壓力管理與睡眠品質' : value < 6 ? '皮質醇偏低' : '皮質醇偏高'
     case 'DHEA-S': return value >= 250 && value <= 450 ? 'DHEA-S 頂尖' : value >= 100 && value <= 500 ? '正常，目標 250+ 可透過運動與壓力管理優化' : value < 100 ? 'DHEA-S 偏低' : 'DHEA-S 偏高'
     case '雌二醇': return value >= 15 && value <= 30 ? '雌二醇頂尖' : value >= 10 && value <= 40 ? '正常，目標 15-30 可透過體脂管理優化' : value < 10 ? '雌二醇偏低' : '雌二醇偏高'
-    case 'SHBG': return value >= 20 && value <= 40 ? 'SHBG 頂尖' : value >= 10 && value <= 57 ? '正常，目標 20-40（太高會降低游離T）' : value < 10 ? 'SHBG 偏低' : 'SHBG 偏高'
+    case 'SHBG': return value < 10 ? 'SHBG 偏低' : value < 20 ? '正常，目標 20-40' : value <= 30 ? 'SHBG 頂尖' : value <= 40 ? '在最佳區間內，但偏上緣——SHBG 越高，能用的游離睪固酮越少' : value <= 57 ? '正常，目標 20-40（太高會降低游離T）' : 'SHBG 偏高'
     default: return ''
   }
 }

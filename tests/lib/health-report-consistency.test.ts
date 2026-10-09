@@ -18,7 +18,7 @@ describe('建議文字與最佳區間一致（男性）', () => {
         if (!advice) return
         const inOptimal = isInOptimalRange(name, v, '男性')
         if (!inOptimal) expect(advice, `${name} ${v}`).not.toContain('頂尖')
-        else expect(advice.includes('頂尖') || advice.includes('極佳'), `${name} ${v}: ${advice}`).toBe(true)
+        else expect(advice.includes('頂尖') || advice.includes('極佳') || advice.includes('最佳區間內'), `${name} ${v}: ${advice}`).toBe(true)
       }
     })
   }
@@ -27,10 +27,17 @@ describe('建議文字與最佳區間一致（男性）', () => {
 describe('趨勢判讀', () => {
   it('前後都在最佳區間內的範圍型指標算持平，不叫退步', () => {
     const [f] = analyzeLabs([
+      { test_name: '維生素D', value: 45, unit: 'ng/mL', date: '2026-01-01' },
+      { test_name: '維生素D', value: 58, unit: 'ng/mL', date: '2026-03-20' },
+    ] as never, { gender: '男性' })
+    expect(f.trend).toBe('stable')
+  })
+  it('男性 SHBG 上升＝變差，即使還在 20-40（跟血檢進退同一條規則，Howard 2026-09-24 立場）', () => {
+    const [f] = analyzeLabs([
       { test_name: 'SHBG', value: 24.4, unit: 'nmol/L', date: '2026-01-01' },
       { test_name: 'SHBG', value: 38.4, unit: 'nmol/L', date: '2026-03-20' },
     ] as never, { gender: '男性' })
-    expect(f.trend).toBe('stable')
+    expect(f.trend).toBe('declining')
   })
 })
 
