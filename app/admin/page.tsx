@@ -669,6 +669,8 @@ export default function AdminDashboard() {
     winback?: WinbackContext
     proposalId?: string
     proposalReason?: string | null
+    /** 草稿類：理由欄要整段顯示（保留換行、不截斷），才能讀完再套用 */
+    proposalFull?: boolean
   }
   const actionQueue = useMemo<QueueItem[]>(() => {
     const items: QueueItem[] = []
@@ -693,7 +695,12 @@ export default function AdminDashboard() {
       const bpEntry = p.proposal_type === 'body_profile_entry'
         ? (p.proposed_changes as unknown as { entry?: { label?: string; value?: string } } | null)?.entry
         : null
-      const txt = bpEntry
+      const draftText = p.proposal_type === 'coach_summary_draft'
+        ? (p.proposed_changes as unknown as { coach_summary?: string } | null)?.coach_summary ?? null
+        : null
+      const txt = draftText
+        ? '抽血後自動起草的教練補充（套用＝覆寫教練補充與健康目標）'
+        : bpEntry
         ? `身體說明書新條目：${bpEntry.label ?? ''}＝${bpEntry.value ?? ''}`
         : cal != null
         ? `引擎建議熱量 ${oldCal ?? '?'} → ${cal}${delta != null ? `（${delta > 0 ? '+' : ''}${delta}）` : ''}`
@@ -707,7 +714,8 @@ export default function AdminDashboard() {
         priority: 0,
         canNote: false,
         proposalId: p.id,
-        proposalReason: p.reasoning,
+        proposalReason: draftText ?? p.reasoning,
+        proposalFull: draftText != null,
       })
     }
 
@@ -1324,7 +1332,7 @@ export default function AdminDashboard() {
                         {item.name} — {item.text}
                         {/* 提案要看得到「為什麼」才敢按批准 */}
                         {item.proposalReason && (
-                          <span className="block mt-1 text-[11px] font-normal text-slate-500 leading-snug line-clamp-3">
+                          <span className={`block mt-1 text-[11px] font-normal text-slate-500 leading-snug ${item.proposalFull ? 'whitespace-pre-line' : 'line-clamp-3'}`}>
                             {item.proposalReason}
                           </span>
                         )}

@@ -8,6 +8,7 @@ import { analyzeLabs } from '@/lib/lab-trend-analyzer'
 import { isGeneticOnce } from '@/lib/lab-due'
 import { isCompetitionMode, isHealthMode } from '@/lib/client-mode'
 import type { LabConsult } from '@/lib/lab-consult'
+import { writtenDate } from '@/lib/coach-summary-draft'
 
 // ---------------------------------------------------------------------------
 // Types (inline for standalone page)
@@ -531,8 +532,7 @@ export default function HealthReportDocument({ clientId, mode = 'coach' }: { cli
             <h2>教練補充</h2>
             {(() => {
               // 手寫的會過期、系統算的不會：教練文字標了「更新至 YYYY/MM/DD」且早於最新抽血 → 提醒
-              const m = client.coach_summary!.match(/更新至\s*(\d{4})[/-](\d{1,2})[/-](\d{1,2})/)
-              const written = m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null
+              const written = writtenDate(client.coach_summary)
               const latest = consult?.drawDate ?? latestPanelDate
               return written && latest && written < latest ? (
                 <p className="report-note" style={{ color: '#b45309', marginTop: 0 }}>這段寫於 {written}，之後有 {latest} 的新血檢；以上方「本次重點」為準。</p>
