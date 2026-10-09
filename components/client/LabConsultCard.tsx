@@ -39,7 +39,8 @@ function ChangeRow({ x, tone, label }: { x: ConsultChange; tone: 'good' | 'bad' 
   )
 }
 
-export default function LabConsultCard({ code }: { code: string }) {
+// showNextList=false：頁面下方已有完整的「下次抽血」卡（LabOrderCard），這裡只留一行，不重複列清單（2026-10-09 健康分頁去重）
+export default function LabConsultCard({ code, showNextList = true }: { code: string; showNextList?: boolean }) {
   const [data, setData] = useState<Data | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -157,8 +158,9 @@ export default function LabConsultCard({ code }: { code: string }) {
       {c.stack && c.stack.length > 0 && (
         <div className="mt-4">
           <h3 className="font-semibold text-slate-900">你在吃的保健品</h3>
-          <div className="mt-1">
-            {c.stack.map(x => {
+          {(() => {
+            // 「生活型」沒有血檢可判，收起來；要注意／沒依據／有依據才攤開（2026-10-09：8 項全攤開，這張卡佔了半頁）
+            const row = (x: (typeof c.stack)[number]) => {
               const tag = x.status === 'caution' ? { t: '要注意', cls: 'text-rose-700 bg-rose-50' }
                 : x.status === 'no-indication' ? { t: '沒有血檢依據', cls: 'text-amber-700 bg-amber-50' }
                 : x.status === 'indicated' ? { t: '有血檢依據', cls: 'text-emerald-700 bg-emerald-50' }
@@ -174,8 +176,19 @@ export default function LabConsultCard({ code }: { code: string }) {
                   {x.effect && <p className="text-xs text-slate-600 mt-0.5 tabular-nums">{x.effect}</p>}
                 </div>
               )
-            })}
-          </div>
+            }
+            const shown = c.stack.filter(x => x.status !== 'lifestyle')
+            const folded = c.stack.filter(x => x.status === 'lifestyle')
+            return <>
+              <div className="mt-1">{shown.map(row)}</div>
+              {folded.length > 0 && (
+                <details className="mt-1 border-t border-slate-100 pt-2">
+                  <summary className="text-sm text-slate-600 cursor-pointer min-h-11 flex items-center">其他 {folded.length} 項生活型（{folded.map(x => x.name).join('、')}）</summary>
+                  <div>{folded.map(row)}</div>
+                </details>
+              )}
+            </>
+          })()}
           <p className="text-xs text-slate-500 mt-1">「沒有血檢依據」不代表有害，是這份血檢看不出你需要它；要不要繼續跟教練討論。</p>
         </div>
       )}
@@ -210,9 +223,10 @@ export default function LabConsultCard({ code }: { code: string }) {
         <p className="text-sm text-slate-900 mt-1 tabular-nums">
           {coachDate ? `教練排的日期：${nextDate}` : `建議 ${nextDate} 左右`}
         </p>
-        <p className="text-xs text-slate-500 mt-0.5">
-          {coachDate ? `系統依這次結果建議 ${c.next.date} 左右（${c.next.reason}）；以教練排的為準` : c.next.reason}
-        </p>
+        {!showNextList ? (
+          <a href="#lab-order" className="text-sm text-primary-700 mt-1 inline-block">要驗哪 {c.next.items.length} 項、怎麼跟醫生說 → 看下方「下次抽血」</a>
+        ) : <>
+        <p className="text-xs text-slate-500 mt-0.5">{c.next.reason}</p>
         {c.next.items.length > 0 ? (
           <ul className="mt-2 space-y-1">
             {c.next.items.map(i => (
@@ -225,6 +239,7 @@ export default function LabConsultCard({ code }: { code: string }) {
         ) : (
           <p className="text-sm text-slate-600 mt-2">要驗哪些，抽血前跟教練確認。</p>
         )}
+        </>}
       </div>
 
       <p className="text-xs text-slate-400 mt-3">這是追蹤與教育用途，不是醫療診斷；數字有疑慮請與醫師討論。</p>
