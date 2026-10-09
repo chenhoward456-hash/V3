@@ -197,11 +197,28 @@ function distanceToOptimal(spec: MarkerSpec, v: number): number {
   return 0
 }
 
+/**
+ * 男性荷爾蒙軸的方向（睪固酮系越高越好、SHBG 越高越差），不管在不在最佳區間內。
+ * 不適用（不是這幾項、或不是男性）回 undefined。
+ * 健康報告（lib/lab-trend-analyzer）也呼叫這支 —— 2026-10-09：報告把 SHBG 24→38 標「持平」、
+ * 血檢進退標「變差」，同一個數字兩種說法。
+ */
+export function sexSpecificDirection(name: string, from: number, to: number, gender?: string | null): 'better' | 'worse' | null | undefined {
+  const spec = MARKERS[name]
+  if (!spec || (!spec.higherBetterForMen && !spec.lowerBetterForMen)) return undefined
+  if (gender !== '男性') return null
+  if (from === to) return null
+  const up = to > from
+  if (spec.higherBetterForMen) return up ? 'better' : 'worse'
+  // Howard 2026-09-24：「SHBG 也要標出來」——24.4→38.4 雖然還在 20–40，但它上升正是游離睪固酮腰斬的主因
+  if (spec.optimalMin != null && to < spec.optimalMin) return 'worse'
+  return up ? 'worse' : 'better'
+}
+
 export function judgeDirection(spec: MarkerSpec, change: ChangeRead | null, gender?: string | null): Direction {
   if (!change || change.verdict === 'noise') return null
   const up = change.pctChange > 0
   if (spec.higherBetterForMen) return gender === '男性' ? (up ? 'better' : 'worse') : null
-  // Howard 2026-09-24：「SHBG 也要標出來」——24.4→38.4 雖然還在 20–40，但它上升正是游離睪固酮腰斬的主因
   if (spec.lowerBetterForMen) {
     if (gender !== '男性') return null
     if (spec.optimalMin != null && change.to.value < spec.optimalMin) return 'worse'

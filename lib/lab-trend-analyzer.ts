@@ -7,6 +7,7 @@
  * 這支引擎是純函式，不依賴 DB。AI 草稿引擎與學員端警示 banner 都吃它的輸出。
  */
 
+import { sexSpecificDirection } from './longevity-lens'
 import {
   LAB_THRESHOLDS,
   LAB_OPTIMAL_RANGES,
@@ -89,6 +90,9 @@ function judgeTrend(
   gender?: '男性' | '女性'
 ): TrendDirection {
   if (latest === prev) return 'stable'
+  // 男性荷爾蒙軸（睪固酮系、SHBG）跟「血檢進退」用同一條規則，在最佳區間內也分好壞
+  const sex = sexSpecificDirection(testName, prev, latest, gender)
+  if (sex !== undefined) return sex === 'better' ? 'improving' : sex === 'worse' ? 'declining' : 'stable'
   const lookupName = resolveLookupName(testName, gender)
   const optimal = LAB_OPTIMAL_RANGES[lookupName]
 
