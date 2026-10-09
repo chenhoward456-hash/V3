@@ -324,6 +324,7 @@ const PLAIN_LABEL: Record<string, string> = {
   albumin: '白蛋白',
   creatinine: '肌酸酐',
   egfr: '腎絲球過濾率 eGFR',
+  cystatin_c: '胱抑素 C（Cystatin C）',
   bun: '尿素氮 BUN',
   uric_acid: '尿酸',
   tsh: '甲狀腺刺激素 TSH',
@@ -352,6 +353,8 @@ const NEXT_WHY: Partial<Record<OrderRule, string>> = {
   'risk-linked': '跟你其他結果一起看才完整',
   'never-tested': '還沒有你自己的基準值',
   stale: '很久沒驗了，補一個新的點',
+  'out-of-range': '這次超出範圍，看有沒有回來',
+  'muscle-check': '不受肌肉量影響，確認肌酸酐／eGFR 偏低是不是肌肉造成的',
 }
 
 const ANSWER_TEXT: Record<ConsultAnswer['status'], string> = {
@@ -517,24 +520,18 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
     seen.add(key)
     items.push({ label, why })
   }
-  // 重訓者 eGFR 被標要留意 → 下次加驗 Cystatin C（不受肌肉量影響，KDIGO 2024 PMID 38490803）
-  // eGFR 60-89 已改判正常（KDIGO，見 utils/labStatus.ts），但重訓者落在這段仍值得用 Cystatin C 確認一次
-  const latestEgfr = [...valid].filter(l => l.test_name === 'eGFR').sort((a, b) => b.date.localeCompare(a.date))[0]
-  const egfrBelow90 = latestEgfr != null && Number(latestEgfr.value) < 90
-  if (input.resistanceTrained && (egfrBelow90 || watch.some(w => w.name === 'eGFR' || w.name === '肌酸酐'))) {
-    push('胱抑素 C（Cystatin C）', 'cystatin_c', '不受肌肉量影響，確認 eGFR 偏低是不是肌肉造成的')
-  }
-  // 這次要留意的一定要追（不管公版有沒有列）
+  // 下次驗什麼只有一個來源：開單引擎（lib/lab-order.ts）。Cystatin C、公版沒列的超範圍項目都在那裡加，
+  // 學員抽血單／回檢邀請／教練開單看到的是同一份（2026-10-09 統一）。
+  // 顯示順序：Cystatin C（決定肌酸酐那條要不要擔心）→ 這次要留意的 → 其餘必驗 → 可延後
+  const plan = buildLabOrder({ labs: valid, templateItems: templateItems ?? [], gender, today, resistanceTrained: input.resistanceTrained })
+  const pushLine = (l: (typeof plan.must)[number]) => push(plainLabel(l.label, l.canonicalId), l.canonicalId, NEXT_WHY[l.rule] ?? '補齊你的基準值')
+  plan.must.filter(l => l.rule === 'muscle-check').forEach(pushLine)
   for (const w of watch) {
     const id = getLabCanonicalId(w.name)
     push(plainLabel(w.name, id), id, '這次要留意，看有沒有回來')
   }
-  if (templateItems && templateItems.length > 0) {
-    const plan = buildLabOrder({ labs: valid, templateItems, gender, today })
-    for (const l of [...plan.must, ...plan.defer.slice(0, DEFER_SHOWN)]) {
-      push(plainLabel(l.label, l.canonicalId), l.canonicalId, NEXT_WHY[l.rule] ?? '補齊你的基準值')
-    }
-  }
+  plan.must.filter(l => l.rule !== 'muscle-check').forEach(pushLine)
+  plan.defer.slice(0, DEFER_SHOWN).forEach(pushLine)
 
   return {
     drawDate,

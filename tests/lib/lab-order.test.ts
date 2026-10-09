@@ -265,3 +265,23 @@ describe('風險連動：Lp(a) 偏高 → ApoB 升為必驗（2026-09-24 謝佳�
     expect(find(p, 'Apo B')!.rule).not.toBe('risk-linked')
   })
 })
+
+describe('2026-10-09 清單統一：Cystatin C 與公版沒列的超範圍項目', () => {
+  const tpl = [{ name: 'Testosterone 總睪固酮', price: 300 }]
+  it('重訓者肌酸酐偏高 → 必開 Cystatin C；沒重訓不加', () => {
+    const labs = [{ test_name: '肌酸酐', value: 1.33, unit: 'mg/dL', date: '2026-06-08' }, { test_name: 'eGFR', value: 74.67, unit: '', date: '2026-06-08' }]
+    const yes = buildLabOrder({ labs: labs as never, templateItems: tpl, gender: '男性', today: '2026-10-09', resistanceTrained: true })
+    expect(yes.must.some(l => l.canonicalId === 'cystatin_c')).toBe(true)
+    const no = buildLabOrder({ labs: labs as never, templateItems: tpl, gender: '男性', today: '2026-10-09' })
+    expect(no.must.some(l => l.canonicalId === 'cystatin_c')).toBe(false)
+  })
+  it('沒系統標準的項目照檢驗所範圍：CPK 397（46-171）進必開；常規項目不另列', () => {
+    const labs = [
+      { test_name: 'CPK', value: 397, unit: 'U/L', date: '2026-09-30', reference_range: '46-171' },
+      { test_name: '空腹血糖', value: 120, unit: 'mg/dL', date: '2026-09-30' },
+    ]
+    const p = buildLabOrder({ labs: labs as never, templateItems: tpl, gender: '男性', today: '2026-10-09' })
+    expect(p.must.some(l => l.label === 'CPK' && l.rule === 'out-of-range')).toBe(true)
+    expect(p.must.some(l => l.canonicalId === 'fasting_glucose')).toBe(false)
+  })
+})

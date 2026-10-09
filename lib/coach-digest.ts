@@ -363,7 +363,7 @@ export async function loadCoachDigest(
     // 血檢：只撈 lab_enabled 的人，連 lab_results 一起帶回來
     // （跟 /api/admin/labs-overview 同一個查法，兩邊算出來的東西才會一致）
     supabase.from('clients')
-      .select('id, name, unique_code, gender, next_checkup_date, lab_results(test_name, value, unit, date, status)')
+      .select('id, name, unique_code, gender, next_checkup_date, training_enabled, lab_results(test_name, value, unit, date, status, reference_range)')
       .eq('lab_enabled', true)
       .eq('is_active', true),
     supabase.from('lab_panel_notes').select('client_id, panel_date, next_review_date'),
@@ -398,6 +398,7 @@ export async function loadCoachDigest(
     unique_code: string | null
     gender: string | null
     next_checkup_date: string | null
+    training_enabled: boolean | null
     lab_results: LabResultRow[] | null
   }
   type TemplateRow = {
@@ -420,6 +421,7 @@ export async function loadCoachDigest(
       unique_code: c.unique_code,
       gender: c.gender,
       next_checkup_date: c.next_checkup_date,
+      training_enabled: c.training_enabled,
       panel_next_review_date: latestPanelReview[c.id]?.nextReview ?? null,
       labs: c.lab_results ?? [],
       templateItems: tpl?.add_on_items ?? undefined,

@@ -83,6 +83,7 @@ const BY_ID: Record<string, Entry> = {
   free_t4: { name: '游離 T4（甲狀腺）', why: '跟 T3 一起看甲狀腺的狀態' },
   tsh: { name: 'TSH（甲狀腺刺激素）', why: '看甲狀腺的整體調控' },
   homocysteine: { name: '同半胱胺酸', why: '跟 B 群代謝、血管健康有關' },
+  cystatin_c: { name: '胱抑素 C（Cystatin C）', why: '看腎功能，不受肌肉量和肌酸影響，比肌酸酐準' },
   homa_ir: { name: '空腹胰島素＋空腹血糖（算 HOMA-IR 胰島素敏感度）', why: '看身體處理醣類的效率' },
   fasting_insulin: { name: '空腹胰島素', why: '跟空腹血糖一起看身體處理醣類的效率' },
   fasting_glucose: { name: '空腹血糖', why: '跟空腹胰島素一起看身體處理醣類的效率' },
