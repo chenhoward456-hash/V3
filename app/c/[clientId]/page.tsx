@@ -2009,10 +2009,10 @@ export default function ClientDashboard() {
         {/* 血檢進退（長壽透鏡學員版）：V3 初衷——同一個人的血檢看得到進退，每個變化分得清真假、接得到那段期間做了什麼。
             放在身體檔案之前：這一頁最先回答「我的血檢在進步還是退步」 */}
         {/* 這次血檢顧問卡：最近一次抽血 60 天內才出現；抽完血不等教練審，先講這次重點／要留意／下次何時驗、驗什麼 */}
-        {view === 'lab' && <SectionErrorBoundary><LabConsultCard code={c.unique_code} /></SectionErrorBoundary>}
+        {view === 'lab' && <SectionErrorBoundary><LabConsultCard code={c.unique_code} showNextList={!c.lab_enabled} /></SectionErrorBoundary>}
         {view === 'lab' && <SectionErrorBoundary><LongevityCard code={c.unique_code} /></SectionErrorBoundary>}
         {/* 下次抽血驗這些：學員打開自己就知道要驗什麼、多少錢、抽血前注意什麼（減法開單引擎） */}
-        {view === 'lab' && c.lab_enabled && <SectionErrorBoundary><LabOrderCard code={c.unique_code} today={getTaiwanDate()} profile={{ age: c.age, gender: c.gender, goalType: c.goal_type, trainingEnabled: c.training_enabled }} /></SectionErrorBoundary>}
+        {view === 'lab' && c.lab_enabled && <SectionErrorBoundary><div id="lab-order" className="scroll-mt-4" /><LabOrderCard code={c.unique_code} today={getTaiwanDate()} profile={{ age: c.age, gender: c.gender, goalType: c.goal_type, trainingEnabled: c.training_enabled }} /></SectionErrorBoundary>}
 
         {view === 'lab' && <BodyProfileCard data={c.body_profile} />}
 
@@ -2256,72 +2256,19 @@ export default function ClientDashboard() {
                   </div>
                 )
               }
-              // 計算最近一筆抽血日期 + 該日有幾筆指標
-              const latestDate = labs.reduce(
-                (max: string, r: { date: string }) => (r.date > max ? r.date : max),
-                labs[0].date as string,
-              )
-              const latestCount = labs.filter((r: { date: string }) => r.date === latestDate).length
-              // 該日異常 / 注意項數量
-              const latestRows = labs.filter((r: { date: string }) => r.date === latestDate)
-              const alertCount = latestRows.filter((r: { status?: string }) => r.status === 'alert').length
-              const attnCount = latestRows.filter((r: { status?: string }) => r.status === 'attention').length
-              // 血檢旅程：抽血次數 + 橫跨月數（突出「整個進程」）
-              const testDates = [...new Set(labs.map((r: { date: string }) => r.date))].sort()
-              const drawCount = testDates.length
-              const firstDate = testDates[0] as string | undefined
-              const spanMonths = firstDate ? Math.max(1, Math.round((new Date(latestDate).getTime() - new Date(firstDate).getTime()) / (30 * 86400000))) : 0
-
+              // 2026-10-09 健康分頁去重：原本這裡還有「血檢旅程」卡＋「最新血檢」30 格，
+              // 跟上方顧問卡／血檢進退重複，而且 30 格的紅黃點讀的是 DB status（紅線 4：不是 UI 真相）。
+              // 只留入口：完整數值與趨勢在時間軸頁。
+              const testDates = [...new Set(labs.map((r: { date: string }) => r.date))]
               return (
                 <>
                   <Link
                     href={`/c/${clientId}/health/timeline`}
-                    className="block bg-emerald-50 border border-emerald-200 hover:border-emerald-300 rounded-2xl p-5 transition-colors"
+                    className="flex items-center justify-between gap-3 bg-white border border-slate-200 hover:border-slate-300 rounded-2xl px-5 py-4 transition-colors"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-semibold text-emerald-900">🩸 你的血檢旅程</span>
-                          {(alertCount > 0 || attnCount > 0) && (
-                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700">
-                              {alertCount > 0 ? `${alertCount} 警示` : `${attnCount} 注意`}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-emerald-800 font-medium">
-                          已追蹤 {drawCount} 次抽血{spanMonths > 0 ? ` · 橫跨 ${spanMonths} 個月` : ''} · {labs.length} 筆指標
-                        </div>
-                        <div className="text-[11px] text-emerald-700 mt-0.5">
-                          最近 {latestDate}（{latestCount} 項）· Howard 最佳化範圍 · 看完整時間軸 →
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-emerald-700 shrink-0" />
-                    </div>
+                    <span className="text-sm text-slate-900">看全部數值與趨勢<span className="text-slate-500">（{testDates.length} 次抽血・{labs.length} 筆）</span></span>
+                    <ChevronRight className="w-5 h-5 text-slate-500 shrink-0" />
                   </Link>
-                  {/* 最新這批血檢的實際數值 — 直接顯示，不用點進時間軸才看得到 */}
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-2">
-                    <p className="text-sm font-semibold text-gray-900 mb-3">🩸 最新血檢 · {latestDate}（{latestCount} 項）</p>
-                    <div className="space-y-1.5">
-                      {latestRows.map((r: { test_name: string; value: number; unit?: string; status?: string }, i: number) => {
-                        const prev = labs
-                          .filter((x: { test_name: string; date: string }) => x.test_name === r.test_name && x.date < latestDate)
-                          .sort((a: { date: string }, b: { date: string }) => b.date.localeCompare(a.date))[0] as { value: number } | undefined
-                        const dot = r.status === 'alert' ? 'bg-rose-500' : r.status === 'attention' ? 'bg-amber-400' : 'bg-emerald-400'
-                        const col = r.status === 'alert' ? 'text-rose-600' : r.status === 'attention' ? 'text-amber-700' : 'text-gray-900'
-                        return (
-                          <div key={i} className="flex items-center justify-between text-sm">
-                            <span className="flex items-center gap-2 text-gray-700"><span className={`w-1.5 h-1.5 rounded-full ${dot}`} />{r.test_name}</span>
-                            <span className="tabular-nums">
-                              {prev != null && Number(prev.value) !== Number(r.value) && <span className="text-gray-400 text-xs">{prev.value}→</span>}
-                              <span className={`font-semibold ${col}`}>{r.value}</span>
-                              <span className="text-gray-400 text-xs"> {r.unit || ''}</span>
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-3">趨勢圖、最佳範圍、判讀 → 點上方卡片看完整時間軸</p>
-                  </div>
                   <div className="mt-2 flex items-center gap-2 text-xs px-1">
                     <Link
                       href={`/c/${clientId}/health/upload`}

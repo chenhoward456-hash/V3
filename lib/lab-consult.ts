@@ -455,7 +455,7 @@ export function buildLabConsult(input: LabConsultInput): LabConsult | null {
     const v = typeof l.value === 'string' ? parseFloat(l.value) : l.value
     const side = sideFromReferenceRange(v, l.reference_range)
     if (!side) continue
-    let note = '系統沒有這項的判讀標準，這是照檢驗所報告印的範圍；下次抽血追蹤有沒有回來'
+    let note = '照檢驗所報告的範圍判斷；下次抽血追蹤有沒有回來'
     if (EXERCISE_SENSITIVE.has(l.test_name)) note += '；抽血前 1–3 天練大重量會讓它暫時升高，下次抽血前 48 小時別練大重量'
     watch.push({
       name: l.test_name,
