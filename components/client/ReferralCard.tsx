@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Copy, Check, Share2, Users, Gift } from 'lucide-react'
 
 interface ReferralCardProps {
@@ -15,6 +15,7 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState(false)
   const [creating, setCreating] = useState(false)
+  const creatingLock = useRef(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -87,13 +88,15 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
       <h3 className="text-sm font-bold text-slate-900">推薦好友</h3>
       <p className="text-sm text-slate-600 mt-2 mb-4">產生你的推薦碼，再分享給朋友。</p>
       <button disabled={creating} className="rounded-xl bg-primary-600 text-white px-4 py-2 text-sm font-semibold disabled:opacity-50" onClick={async () => {
+        if (creatingLock.current) return
+        creatingLock.current = true
         setCreating(true); setCreateError(null)
         try {
           const res = await fetch('/api/referral', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create_code', clientId }) })
           const json = await res.json()
           if (!res.ok || !json.code) throw new Error('產生失敗，請重試')
           setCode(json.code); setTotalReferrals(json.totalReferrals || 0); setRewardDays(json.rewardDays || 0)
-        } catch { setCreateError('產生失敗，請重試') } finally { setCreating(false) }
+        } catch { setCreateError('產生失敗，請重試') } finally { creatingLock.current = false; setCreating(false) }
       }}>{creating ? '產生中…' : '產生推薦碼'}</button>
       {createError && <p role="alert" className="text-sm text-red-700 mt-2">{createError}</p>}
     </div>
