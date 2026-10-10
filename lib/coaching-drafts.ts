@@ -64,8 +64,10 @@ export async function buildCoachingDrafts(
 ): Promise<CoachingDraft[]> {
   // ⚠️ 日期一律走台北時區。`since` 原本是 toISOString().slice(0,10)＝UTC，
   //    台灣凌晨 0–8 點會多撈一天（見 lib/date-utils 那段說明）。
-  const now = getTaiwanDate()
-  const since = taiwanDateAgo(WINDOW_DAYS)
+  const snapshot = new Date()
+  const now = getTaiwanDate(snapshot)
+  const since = taiwanDateAgo(WINDOW_DAYS, snapshot)
+  const macroSince = snapshot.getTime() - 60 * 86_400_000
 
   let clientQ = supabase
     .from('clients')
@@ -81,29 +83,40 @@ export async function buildCoachingDrafts(
 
   // 批次撈：一次查、依 client_id 分組，避免 N 次往返
   const [bodyR, nutR, trnR, welR, labR, pushR, setsR, macroR] = await Promise.all([
-    supabase.from('body_composition').select('client_id, date, weight, body_fat').in('client_id', ids).gte('date', since),
-    supabase.from('nutrition_logs').select('client_id, date, compliant, calories, protein_grams, fat_grams').in('client_id', ids).gte('date', since),
-    supabase.from('training_logs').select('client_id, date, training_type').in('client_id', ids).gte('date', since),
-    supabase.from('daily_wellness').select('client_id, date, energy_level').in('client_id', ids).gte('date', since),
-    supabase.from('lab_results').select('client_id, test_name, value, status, date').in('client_id', ids).gte('date', since),
+    supabase.from('body_composition').select('client_id, date, weight, body_fat').in('client_id', ids).gte('date', since).lte('date', now),
+    supabase.from('nutrition_logs').select('client_id, date, compliant, calories, protein_grams, fat_grams').in('client_id', ids).gte('date', since).lte('date', now),
+    supabase.from('training_logs').select('client_id, date, training_type').in('client_id', ids).gte('date', since).lte('date', now),
+    supabase.from('daily_wellness').select('client_id, date, energy_level').in('client_id', ids).gte('date', since).lte('date', now),
+    supabase.from('lab_results').select('client_id, test_name, value, status, date').in('client_id', ids).gte('date', since).lte('date', now),
     supabase.from('push_subscriptions').select('client_id').in('client_id', ids),
     // ⭐ 實際做的組數。⚠️ 覆蓋率很低（2026-09 只有林宥任 60%，其餘 0%），
     //    引擎那邊有 SET_LOG_MIN_DAYS 門檻擋著，低於門檻只會說「看不到你練了什麼」。
-    supabase.from('training_sets').select('client_id, date, exercise_name').in('client_id', ids).gte('date', since),
+    supabase.from('training_sets').select('client_id, date, exercise_name').in('client_id', ids).gte('date', since).lte('date', now),
     // 碳水回補期偵測：碳水被往上調之後那兩週的體重是水，不能拿來跟學員講趨勢
     supabase.from('macro_adjustment_log')
       .select('client_id, applied_at, old_macros, new_macros')
       .in('client_id', ids)
-      .gte('applied_at', new Date(Date.now() - 60 * 86_400_000).toISOString()),
+      .gte('applied_at', new Date(macroSince).toISOString()).lte('applied_at', snapshot.toISOString()),
   ])
 
   const results = [bodyR, nutR, trnR, welR, labR, pushR, setsR, macroR]
   if (results.some(result => result.error)) throw new Error('部分資料讀取失敗，尚未生成草稿；請重試')
 
   const pushSet = new Set((pushR.data || []).map((r: { client_id: string }) => r.client_id))
-  const bodyByC = group(bodyR.data), nutByC = group(nutR.data), trnByC = group(trnR.data)
-  const welByC = group(welR.data), labByC = group(labR.data), macroByC = group(macroR.data)
-  const setsByC = group(setsR.data)
+  // Defensive snapshot filtering also covers mocks/imported malformed rows. Both the
+  // engine and evidence consume these same rows; future records cannot create advice.
+  const datedRows = <T extends { date: string }>(rows: T[] | null): T[] => (rows ?? []).filter(row => {
+    if (typeof row.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(row.date)) return false
+    const parsed = Date.parse(row.date)
+    return Number.isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === row.date && row.date >= since && row.date <= now
+  })
+  const macroRows = (macroR.data ?? []).filter(row => {
+    const instant = typeof row.applied_at === 'string' ? Date.parse(row.applied_at) : NaN
+    return Number.isFinite(instant) && instant >= macroSince && instant <= snapshot.getTime()
+  })
+  const bodyByC = group(datedRows(bodyR.data)), nutByC = group(datedRows(nutR.data)), trnByC = group(datedRows(trnR.data))
+  const welByC = group(datedRows(welR.data)), labByC = group(datedRows(labR.data)), macroByC = group(macroRows)
+  const setsByC = group(datedRows(setsR.data))
 
   const drafts = (clients as ClientRow[]).map((c) => {
     const input: WCInput = {
@@ -113,7 +126,9 @@ export async function buildCoachingDrafts(
       training: (trnByC.get(c.id) || []).map((r: any) => ({ date: r.date, training_type: r.training_type })),
       wellness: (welByC.get(c.id) || []).map((r: any) => ({ date: r.date, energy_level: r.energy_level })),
       labs: (labByC.get(c.id) || []).map((r: any) => ({ test_name: r.test_name, value: r.value, status: r.status, date: r.date })),
-      macroLog: (macroByC.get(c.id) || []).map((r: any) => ({ applied_at: r.applied_at, old_macros: r.old_macros, new_macros: r.new_macros })),
+      // This engine only consumes applied_at.slice(0,10); normalize its input to
+      // Taiwan calendar dates. Keep raw timestamps in macroByC for evidence.
+      macroLog: (macroByC.get(c.id) || []).map((r: any) => ({ applied_at: getTaiwanDate(new Date(r.applied_at)), old_macros: r.old_macros, new_macros: r.new_macros })),
       trainingSets: (setsByC.get(c.id) || []).map((r: any) => ({ date: r.date, exercise_name: r.exercise_name })),
       trainingPlan: (c as any).training_plan ?? null,
       now,

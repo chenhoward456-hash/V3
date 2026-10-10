@@ -29,7 +29,9 @@ export default function WeeklyCoachingPage() {
   const dialog = useRef<HTMLDialogElement>(null)
   const messageFor = (d: CoachingDraft) => edits[d.clientId] ?? d.studentMessage
   const invalid = (text: string) => !text.trim() ? '請先填寫訊息。' : text.trim().length > LIMIT ? `訊息超過 ${LIMIT} 字，請縮短後再確認。` : ''
-  const dirty = (drafts ?? []).some(d => edits[d.clientId] !== undefined && edits[d.clientId] !== d.studentMessage && !results[d.clientId]?.saved && !results[d.clientId]?.unknown)
+  const dirty = sending || Object.values(results).some(result => result.unknown) || (drafts ?? []).some(d => edits[d.clientId] !== undefined && edits[d.clientId] !== d.studentMessage && !results[d.clientId]?.saved && !results[d.clientId]?.unknown)
+
+  const leaveMessage = sending ? '訊息正在儲存與發送，離開後可能無法確認結果。確定離開？' : Object.values(results).some(result => result.unknown) ? '有訊息尚未確認是否儲存。離開會清除本頁重送限制，請先核對學員頁。確定離開？' : '尚未送出的編輯內容會清除。確定離開？'
 
   useEffect(() => {
     const controller = new AbortController()
@@ -83,7 +85,7 @@ export default function WeeklyCoachingPage() {
         const res = await fetch('/api/admin/weekly-coaching/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId: d.clientId, message, mode: d.mode }) })
         const data = await res.json()
         result = res.ok && data.saved
-          ? { saved: true, text: data.success ? `已存學員頁，${data.method === 'web_push' ? 'Web 推播' : 'LINE 通知'}已送達。` : '已存學員頁；通知未送達，請勿重複送出。' }
+          ? { saved: true, text: data.success ? `已存學員頁，${data.method === 'web_push' ? 'Web 推播' : 'LINE 通知'}已送出。` : '已存學員頁；通知未送達，請勿重複送出。' }
           : { saved: false, unknown: res.status >= 500 || res.ok, text: data.error || '無法確認儲存結果；請到學員總覽核對後再重試。' }
       } catch { result = { saved: false, unknown: true, text: '連線中斷，無法確認是否已儲存；請到學員總覽核對，避免重複送出。' } }
       setResults(prev => ({ ...prev, [d.clientId]: result }))
@@ -98,7 +100,7 @@ export default function WeeklyCoachingPage() {
       <header className="mb-6">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-slate-900">本週教練草稿</h1>
-          <a href="/admin" onClick={e => { if (dirty && !window.confirm('尚未送出的編輯內容會清除。確定離開？')) e.preventDefault() }} className="flex min-h-11 items-center text-sm text-primary-700">返回後台</a>
+          <a href="/admin" onClick={e => { if (dirty && !window.confirm(leaveMessage)) e.preventDefault() }} className="flex min-h-11 items-center text-sm text-primary-700">返回後台</a>
         </div>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">先看依據、改成你想說的話，再複製或檢查發送。編輯只保留在這一頁，尚未送出，也不會套用營養或課表。</p>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -115,7 +117,7 @@ export default function WeeklyCoachingPage() {
         const modified = text !== d.studentMessage
         return <article key={d.clientId} className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-3"><input aria-label={`選取 ${d.name}`} type="checkbox" checked={selected.has(d.clientId)} disabled={sending || saved || uncertain} onChange={() => setSelected(prev => { const next = new Set(prev); next.has(d.clientId) ? next.delete(d.clientId) : next.add(d.clientId); return next })} className="h-5 w-5 accent-primary-600" /><h2 className="text-lg font-semibold text-slate-900">{d.name}</h2></div>
+            <div className="flex items-center gap-3"><input aria-label={`選取 ${d.name}`} type="checkbox" checked={selected.has(d.clientId)} disabled={loading || sending || saved || uncertain} onChange={() => setSelected(prev => { const next = new Set(prev); next.has(d.clientId) ? next.delete(d.clientId) : next.add(d.clientId); return next })} className="h-5 w-5 accent-primary-600" /><h2 className="text-lg font-semibold text-slate-900">{d.name}</h2></div>
             <a className="flex min-h-11 items-center text-sm text-primary-700" target="_blank" rel="noopener noreferrer" href={`/admin/clients/${d.clientId}/overview`}>查學員紀錄 ↗</a>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-slate-800">{d.headline}</p>
@@ -127,10 +129,10 @@ export default function WeeklyCoachingPage() {
             {d.evidence && <div className="mt-4 border-t border-slate-100 pt-3"><p className="text-xs leading-relaxed text-slate-500">趨勢日期 {d.evidence.from} 至 {d.evidence.to}（含首尾）；各來源採用期間列於下方。筆數與記錄天數不同；沒記錄不等於沒執行。感受取近 7 天平均並與前 7 天比較；營養變更取近 60 天作為回補期背景。</p><dl className="mt-3 space-y-2">{d.evidence.sources.map(s => <div key={s.key} className="flex flex-wrap justify-between gap-x-3 text-xs leading-relaxed"><dt className="text-slate-700">{s.label}<span className="block text-slate-400">{s.from} 至 {s.to}</span></dt><dd className="text-slate-500">{s.records} 筆 · {s.days} 天 · 最新 {s.latestDate || '無此期間記錄'}</dd></div>)}</dl></div>}
           </details>
           <div className="mt-4 border-t border-slate-100 pt-4"><div className="mb-2 flex flex-wrap items-center justify-between gap-2"><label htmlFor={`message-${d.clientId}`} className="text-sm font-medium text-slate-900">給學員的訊息</label><span className="text-xs text-slate-500">{saved ? '已存學員頁' : modified ? '已編輯，尚未送出' : '草稿，尚未送出'}</span></div>
-            <textarea id={`message-${d.clientId}`} value={text} disabled={saved || sending} rows={7} onChange={e => { setEdits(prev => ({ ...prev, [d.clientId]: e.target.value })); setCopied(null); setCopyError(null) }} aria-describedby={`validation-${d.clientId}`} className="w-full resize-y rounded-xl border border-slate-200 p-3 text-sm leading-relaxed text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-slate-50" />
+            <textarea id={`message-${d.clientId}`} value={text} disabled={loading || saved || sending} rows={7} onChange={e => { setEdits(prev => ({ ...prev, [d.clientId]: e.target.value })); setCopied(null); setCopyError(null) }} aria-describedby={`validation-${d.clientId}`} className="w-full resize-y rounded-xl border border-slate-200 p-3 text-sm leading-relaxed text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-slate-50" />
             <div id={`validation-${d.clientId}`} className="mt-1 flex flex-wrap justify-between gap-2 text-xs"><span className={issue ? 'text-rose-700' : 'text-slate-500'}>{issue || '複製及檢查發送會使用上方文字。'}</span><span className="text-slate-500">{text.trim().length} / {LIMIT} 字</span></div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2"><button onClick={() => copy(d)} disabled={!text.trim()} className={primary}>{copied === d.clientId ? '已複製目前文字' : '複製目前文字'}</button><button onClick={() => openPreview([d])} disabled={loading || !!error || !!issue || sending || saved || uncertain} className={secondary}>檢查並發送</button><button disabled={!modified || saved || sending} onClick={() => { if (window.confirm('確定還原系統草稿？目前的編輯內容會清除。')) { setEdits(prev => ({ ...prev, [d.clientId]: d.studentMessage })); setCopied(null) } }} className={`${button} text-slate-500 hover:bg-slate-50`}>還原原文</button></div>
+          <div className="mt-4 flex flex-wrap gap-2"><button onClick={() => copy(d)} disabled={!text.trim()} className={primary}>{copied === d.clientId ? '已複製目前文字' : '複製目前文字'}</button><button onClick={() => openPreview([d])} disabled={loading || !!error || !!issue || sending || saved || uncertain} className={secondary}>檢查並發送</button><button disabled={loading || !modified || saved || sending} onClick={() => { if (window.confirm('確定還原系統草稿？目前的編輯內容會清除。')) { setEdits(prev => ({ ...prev, [d.clientId]: d.studentMessage })); setCopied(null) } }} className={`${button} text-slate-500 hover:bg-slate-50`}>還原原文</button></div>
           {copyError === d.clientId && <p role="alert" className="mt-2 text-sm text-rose-700">無法存取剪貼簿，請重試或選取上方文字複製。</p>}
           {uncertain && <button className={`${secondary} mt-3`} onClick={() => { setResults(prev => ({ ...prev, [d.clientId]: { saved: false, text: '已核對未儲存，可重新檢查發送。' } })); setError('') }}>已核對學員頁，確認未儲存</button>}
           {results[d.clientId] && <p role="status" className="mt-3 text-sm leading-relaxed text-slate-700">{results[d.clientId].text}</p>}
