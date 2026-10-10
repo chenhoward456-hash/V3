@@ -8,18 +8,14 @@ const log = createLogger('referral')
 
 const supabase = createServiceSupabase()
 
-/**
- * Generate an opaque referral code (不嵌入 unique_code，避免洩漏認證密鑰)
- * Format: "REF-XXXXXXXX" (8 chars random base64url)
- */
-function generateReferralCode(_uniqueCode: string): string {
-  const code = crypto.randomBytes(6).toString('base64url').slice(0, 8).toUpperCase()
-  return `REF-${code}`
+/** Stable per authenticated client UUID; code UNIQUE arbitrates concurrent creation. */
+function generateReferralCode(clientId: string): string {
+  return `REF-${crypto.createHash('sha256').update(clientId).digest('hex').slice(0, 16).toUpperCase()}`
 }
 
 /**
  * GET /api/referral?clientId=<unique_code>
- * Returns the client's referral code, creating one if it doesn't exist.
+ * Returns the client's existing referral code without creating it.
  */
 export async function GET(request: NextRequest) {
   const clientId = request.nextUrl.searchParams.get('clientId')
@@ -36,25 +32,28 @@ export async function GET(request: NextRequest) {
       .eq('unique_code', clientId)
       .maybeSingle()
 
-    if (clientError || !client) {
+    if (clientError) return NextResponse.json({ error: 'Failed to load client' }, { status: 500 })
+    if (!client) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
 
     // Find existing referral code
-    const { data: existingCode } = await supabase
+    const { data: existingCode, error: existingError } = await supabase
       .from('referral_codes')
       .select('*')
       .eq('client_id', client.id)
       .maybeSingle()
 
+    if (existingError) return NextResponse.json({ error: 'Failed to load referral code' }, { status: 500 })
     if (existingCode) {
       // Calculate total reward days earned
-      const { data: completedReferrals } = await supabase
+      const { data: completedReferrals, error: completedError } = await supabase
         .from('referrals')
         .select('id')
         .eq('referrer_id', client.id)
         .eq('status', 'completed')
 
+      if (completedError) return NextResponse.json({ error: 'Failed to load referral rewards' }, { status: 500 })
       const completedCount = completedReferrals?.length || 0
       const rewardDays = completedCount * (existingCode.reward_value || 7)
 
@@ -65,28 +64,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Create new referral code
-    const code = generateReferralCode(client.unique_code)
-
-    const { data: newCode, error: insertError } = await supabase
-      .from('referral_codes')
-      .insert({
-        client_id: client.id,
-        code,
-      })
-      .select('*')
-      .single()
-
-    if (insertError) {
-      log.error('Failed to create referral code', insertError)
-      return NextResponse.json({ error: 'Failed to create referral code' }, { status: 500 })
-    }
-
-    return NextResponse.json({
-      code: newCode.code,
-      totalReferrals: 0,
-      rewardDays: 0,
-    })
+    return NextResponse.json({ code: null, totalReferrals: 0, rewardDays: 0 })
   } catch (err: unknown) {
     log.error('Referral GET error', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -105,7 +83,31 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { referralCode, refereeCode, refereeClientId: rawRefereeId } = await request.json()
+    const body = await request.json()
+    if (body.action === 'create_code') {
+      if (typeof body.clientId !== 'string' || !body.clientId) return NextResponse.json({ error: 'Missing clientId' }, { status: 400 })
+      const { data: client, error: clientError } = await supabase.from('clients').select('id, unique_code, is_active, expires_at').eq('unique_code', body.clientId).maybeSingle()
+      if (clientError) return NextResponse.json({ error: 'Failed to load client' }, { status: 500 })
+      if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+      if (client.is_active === false || (client.expires_at && new Date(client.expires_at) < new Date())) return NextResponse.json({ error: '帳號已暫停或過期' }, { status: 403 })
+      const { data: existing, error: lookupError } = await supabase.from('referral_codes').select('*').eq('client_id', client.id).maybeSingle()
+      if (lookupError) return NextResponse.json({ error: 'Failed to load referral code' }, { status: 500 })
+      if (existing) return NextResponse.json({ code: existing.code, totalReferrals: existing.total_referrals || 0, rewardDays: 0 })
+      const code = generateReferralCode(client.id)
+      const { data: created, error } = await supabase.from('referral_codes').insert({ client_id: client.id, code }).select('*').single()
+      if (error) {
+        // The existing code UNIQUE constraint arbitrates concurrent creation.
+        if (error.code === '23505') {
+          const { data: winner, error: winnerError } = await supabase.from('referral_codes').select('*').eq('code', code).maybeSingle()
+          if (winnerError) return NextResponse.json({ error: 'Failed to load referral code' }, { status: 500 })
+          if (winner && winner.client_id !== client.id) return NextResponse.json({ error: 'Referral code collision' }, { status: 409 })
+          if (winner) return NextResponse.json({ code: winner.code, totalReferrals: winner.total_referrals || 0, rewardDays: 0 })
+        }
+        return NextResponse.json({ error: 'Failed to create referral code' }, { status: 500 })
+      }
+      return NextResponse.json({ code: created.code, totalReferrals: 0, rewardDays: 0 })
+    }
+    const { referralCode, refereeCode, refereeClientId: rawRefereeId } = body
 
     if (!referralCode || (!rawRefereeId && !refereeCode)) {
       return NextResponse.json(

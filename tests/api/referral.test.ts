@@ -129,7 +129,7 @@ describe('GET /api/referral', () => {
     expect(json.rewardDays).toBe(14)
   })
 
-  it('creates new referral code if none exists', async () => {
+  it('returns no referral code without creating one if none exists', async () => {
     mockTableCalls['clients'] = {
       data: { id: 'client-uuid-2', unique_code: 'XYZ789', created_at: '2024-01-01' },
       error: null,
@@ -179,7 +179,8 @@ describe('GET /api/referral', () => {
     const json = await res.json()
 
     expect(res.status).toBe(200)
-    expect(json.code).toBe('XYZ789-A1B2')
+    expect(json.code).toBeNull()
+    expect(referralCodeCallCount).toBe(1)
     expect(json.totalReferrals).toBe(0)
     expect(json.rewardDays).toBe(0)
   })
@@ -196,7 +197,7 @@ describe('GET /api/referral', () => {
   it('returns 404 if client not found', async () => {
     mockTableCalls['clients'] = {
       data: null,
-      error: { message: 'No rows found' },
+      error: null,
     }
 
     const req = makeGetRequest({ clientId: 'NONEXISTENT' })

@@ -312,10 +312,16 @@ export async function handleCoachActionPostback(
     const secret = process.env.CRON_SECRET || ''
     try {
       const res = await fetch(`${site}/api/admin/trajectory-check?clientId=${clientId}`, {
+        method: 'POST',
         headers: { Authorization: `Bearer ${secret}` },
       })
       const j = await res.json()
-      await replyMessage(replyToken, [{ type: 'text', text: `▶ 強制重算完成：${j.decision ?? 'unknown'}\n${j.reason ?? ''}\n\n（如果有結果會單獨推一則）` }])
+      const text = !res.ok
+        ? j.notification === 'failed' || j.notification === 'unknown'
+          ? `⚠️ 分析已完成，但${j.notification === 'unknown' ? '通知是否送達不明' : '通知推送失敗'}。\n${typeof j.error === 'string' ? j.error : '請先核對已收到的訊息，勿盲目重送'}`
+          : `❌ 重算失敗：${typeof j.error === 'string' ? j.error : '服務暫時無法處理，請稍後確認'}`
+        : `▶ 強制重算完成：${j.decision ?? 'unknown'}\n${j.reason ?? ''}\n\n（如果有結果會單獨推一則）`
+      await replyMessage(replyToken, [{ type: 'text', text }])
     } catch (e) {
       await replyMessage(replyToken, [{ type: 'text', text: `❌ 重算失敗：${(e as Error).message}` }])
     }

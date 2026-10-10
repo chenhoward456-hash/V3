@@ -388,6 +388,7 @@ export default function ClientEditor() {
       const loadedClient = { ...data, client_mode: data.client_mode || 'standard' }
       setClient(loadedClient)
       initialClientRef.current = JSON.stringify(loadedClient)
+      void fetch('/api/client-overview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'viewed', clientId }) }).catch(() => {})
 
       if (overviewRes.ok) {
         const overview = await overviewRes.json()

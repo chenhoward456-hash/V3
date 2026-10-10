@@ -1,3 +1,4 @@
+import { restoreExpiredCoachOverride } from '@/lib/coach-macro-override'
 /**
  * Daily Cron Job — 每日提醒推播
  *
@@ -179,24 +180,9 @@ export async function GET(request: NextRequest) {
         if (override?.expires_at && new Date(override.expires_at) <= now) {
           // 稽核 E4：原本只解鎖、不還原 → 教練設的短期 macro（例：Peak Week 掏空碳水）到期後永久留著。
           // 跟 nutrition-suggestions 的到期處理同一套：先還原 previous_values、寫 log，再解鎖。
-          const restore: Record<string, number> = {}
-          for (const [k, v] of Object.entries((override.previous_values ?? {}) as Record<string, unknown>)) {
-            if (v != null && Number.isFinite(Number(v))) restore[k] = Number(v)
-          }
-          const { error: clearErr } = await supabase.from('clients').update({ ...restore, coach_macro_override: null }).eq('id', c.id)
-          if (clearErr) { logger.error(`override expire ${c.name}: ${clearErr.message}`); continue }
-          if (Object.keys(restore).length > 0) {
-            const { error: logErr } = await supabase.from('macro_adjustment_log').insert({
-              client_id: c.id,
-              applied_by: 'system',
-              trigger_source: 'manual',
-              old_macros: override.override_values ?? {},
-              new_macros: restore,
-              reason: `教練覆寫到期（${override.expires_at}），自動還原覆寫前的營養目標`,
-            })
-            if (logErr) logger.error(`override expire log ${c.name}: ${logErr.message}`)
-          }
-          console.log(`[Cron] Coach override expired for ${c.name}, restored ${Object.keys(restore).length} fields and cleared.`)
+          const result = await restoreExpiredCoachOverride(supabase, c.id, override, now)
+          if (result.error) { logger.error(`override expire ${c.name}: ${result.error}`); continue }
+          if (result.restored) logger.info(`Coach override expired for ${c.name}, restored ${Object.keys(result.values).length} fields and cleared.`)
         }
       }
     }
