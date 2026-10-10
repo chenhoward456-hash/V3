@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
 import { buildCoachingDrafts } from '@/lib/coaching-drafts'
-import { getTaiwanDate } from '@/lib/date-utils'
 
 // GET /api/admin/weekly-coaching?clientId=...
 // 本週教練佇列：每位啟用學員一份草稿。
@@ -14,14 +13,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '未授權' }, { status: 401 })
   }
 
-  const supabase = createServiceSupabase()
   const onlyClientId = new URL(request.url).searchParams.get('clientId')
+  if (onlyClientId !== null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(onlyClientId)) {
+    return NextResponse.json({ error: '學員代碼格式錯誤' }, { status: 400 })
+  }
 
   try {
-    const drafts = await buildCoachingDrafts(supabase, { onlyClientId })
-    return NextResponse.json({ drafts, generatedAt: getTaiwanDate() })
+    const drafts = await buildCoachingDrafts(createServiceSupabase(), { onlyClientId })
+    return NextResponse.json({ drafts, generatedAt: new Date().toISOString() }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (e) {
     console.error('[weekly-coaching] 產草稿失敗', e)
-    return NextResponse.json({ error: '查詢學員失敗' }, { status: 500 })
+    return NextResponse.json({ error: '資料讀取失敗，尚未生成草稿；請重試' }, { status: 500 })
   }
 }
