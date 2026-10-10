@@ -43,3 +43,13 @@ describe('回檢指令', () => {
     expect(parseCoachCommand('發 震宣', names)).toEqual({ kind: 'send_message', name: '震宣' })
   })
 })
+
+describe('確定發（2026-10-10）：要教練看過的草稿，看完預覽後明確同意才送', () => {
+  const names = ['謝佳峻', '震宣']
+  it('「確定發 名字」才解析成 confirm_send；「發 名字」仍是一般發送', () => {
+    expect(parseCoachCommand('確定發 震宣', names)).toEqual({ kind: 'confirm_send', name: '震宣' })
+    expect(parseCoachCommand('確定發 震宣 加油', names)).toBeNull()
+    expect(parseCoachCommand('發 震宣', names)).toEqual({ kind: 'send_message', name: '震宣' })
+    expect(looksLikeCoachCommand('確定發 震宣')).toBe(true)
+  })
+})

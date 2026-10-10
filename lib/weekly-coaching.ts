@@ -455,14 +455,14 @@ export function computeWeeklyCoachingDraft(input: WCInput): WeeklyCoachingDraft 
         // 那麼盈餘就從這個實測維持熱量往上加，比拿設定值瞎猜準。
         // 幅度取 +10%（Iraki 2019 建議 lean bulk +10~20%，進階者取下緣）⚖️立場非共識。
         const addKcal = Math.round((cAvg * 0.10) / 25) * 25
-        adjustments.push(`熱量往上加約 +${addKcal} kcal/天（他吃 ~${Math.round(cAvg)} 卻沒長到理想速率 → 這就是他的維持熱量）`)
-        bullets.push(`🔥 實際吃 ~${Math.round(cAvg)} kcal（設定 ${cTarget}）→ 體重沒推上去，這個攝取量約等於他的維持熱量`)
+        adjustments.push(`熱量往上加約 +${addKcal} kcal/天（你最近平均吃 ~${Math.round(cAvg)}，體重還沒長到理想速度 → 這大約就是你的維持熱量）`)
+        bullets.push(`🔥 實際吃 ~${Math.round(cAvg)} kcal（設定 ${cTarget}）→ 體重沒推上去，這個攝取量約等於你的維持熱量`)
       } else if (cAvg < cTarget * 0.9) {
         adjustments.push(`先把熱量吃到 ${cTarget} kcal（近期平均才 ${Math.round(cAvg)}）——沒吃到就談不上盈餘`)
         bullets.push(`🔥 實際吃 ~${Math.round(cAvg)} kcal／設定 ${cTarget} → 缺 ${Math.round(cTarget - cAvg)} kcal`)
       }
     } else if (cAvg > cTarget * 1.05 && perWeek < -0.1) {
-      adjustments.push('熱量不動（他吃超過設定還在掉，代表 TDEE 比設定高、砍它沒道理）')
+      adjustments.push('熱量不動（你吃得比設定多、體重還在掉，代表你實際消耗比設定高，沒道理再砍）')
       bullets.push(`🔥 實際吃 ~${Math.round(cAvg)} kcal（設定 ${cTarget}）卻仍在掉 → 別降熱量`)
     } else if (cAvg < cTarget * 0.95 && perWeek > -0.05) {
       adjustments.push('吃不到設定又沒掉 → 先確認執行，再考慮微調')

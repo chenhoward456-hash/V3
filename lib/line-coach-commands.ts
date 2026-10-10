@@ -36,6 +36,7 @@ export type CoachCommand =
   | { kind: 'list_messages' }
   | { kind: 'preview_message'; name: string }
   | { kind: 'send_message'; name: string }
+  | { kind: 'confirm_send'; name: string }
   | { kind: 'preview_retest'; name: string }
   | { kind: 'send_retest'; name: string }
   | { kind: 'approve'; name: string }
@@ -60,6 +61,7 @@ export function looksLikeCoachCommand(text: string): boolean {
     || /^(訊息|草稿|本週訊息)$/.test(t)
     || /^(訊息|草稿)\s*\S/.test(t)
     || /^(發|送|發送)\s*\S/.test(t)
+    || /^確定(發|送|發送)\s*\S/.test(t)
     || /^回檢\s*\S/.test(t)
 }
 
@@ -83,6 +85,12 @@ export function parseCoachCommand(text: string, knownNames: string[]): CoachComm
     const name = retest[2].trim()
     if (!knownNames.some(n => n && n === name)) return null
     return retest[1] ? { kind: 'send_retest', name } : { kind: 'preview_retest', name }
+  }
+  // 「確定發 X」：標了要教練看過的草稿，看完預覽後明確同意才送（名字一樣要完全相符）
+  const confirm = t.match(/^確定(?:發|送|發送)\s+(.+)$/)
+  if (confirm) {
+    const name = confirm[1].trim()
+    return knownNames.some(n => n && n === name) ? { kind: 'confirm_send', name } : null
   }
   const sendOne = t.match(/^(?:發|送|發送)\s+(.+)$/)
   if (sendOne) {
@@ -120,12 +128,19 @@ export function parseCoachCommand(text: string, knownNames: string[]): CoachComm
 /** 一則草稿在 LINE 上怎麼攤開 */
 function previewText(d: CoachingDraft): string {
   const parts = [`【${d.name}】${d.headline}`, `資料 ${d.dataDays} 天`]
-  if (d.needsCoachReview) parts.push('⚠️ 引擎標了「要你看過」，不能用「發」一個字送出')
+  if (d.needsCoachReview) parts.push('⚠️ 引擎標了「要你看過」：看完下面全文沒問題，打「確定發 ' + d.name + '」')
   if (d.bullets.length) parts.push('', '本週數據：', ...d.bullets.map((b) => `• ${b}`))
   if (d.adjustments.length) parts.push('', '建議調整：', ...d.adjustments.map((a) => `• ${a}`))
   if (d.flags.length) parts.push('', `旗標：${d.flags.join('、')}`)
   parts.push('', '────── 要發給他的原文 ──────', d.studentMessage)
   if (!d.needsCoachReview) parts.push('', `沒問題就打「發 ${d.name}」。`)
+  else {
+    parts.push('', `沒問題就打「確定發 ${d.name}」。`)
+    // 訊息裡寫了要改熱量／蛋白，但處方還沒改 → 學員看到的跟系統設定對不上
+    if (d.adjustments.some(a => /熱量|蛋白|碳水|脂肪|kcal/.test(a) && !/不動|維持/.test(a))) {
+      parts.push('⚠️ 這則有提到改熱量／蛋白：發之前先把處方改好（後台或「套用 ' + d.name + '」），學員看到的才會跟系統一致')
+    }
+  }
   return parts.join('\n')
 }
 
@@ -242,7 +257,7 @@ export async function tryCoachCommand(
     return true
   }
 
-  if (command.kind === 'preview_message' || command.kind === 'send_message') {
+  if (command.kind === 'preview_message' || command.kind === 'send_message' || command.kind === 'confirm_send') {
     const cid = Object.keys(nameOf).find((id) => nameOf[id] === command.name)
     if (!cid) {
       await replyMessage(replyToken, [{ type: 'text', text: `找不到學員「${command.name}」` }])
@@ -262,12 +277,12 @@ export async function tryCoachCommand(
     // ⛔ 引擎自己標了「這個要人看」就不准一個字發送。
     //    needsCoachReview 會亮的情況包含：資料不足、變化速率離譜、有新血檢。
     //    那些正是最不該讓一句「發 X」自動送出去的。
-    if (draft.needsCoachReview) {
+    if (draft.needsCoachReview && command.kind !== 'confirm_send') {
       await replyMessage(replyToken, [{
         type: 'text',
         text: `⚠️ ${draft.name} 這則標了「要你看過」，不能一個字送出。\n\n`
           + `${draft.headline}\n\n`
-          + `先打「訊息 ${draft.name}」看完整內容，要發的話去後台按，或改寫後再發。`,
+          + `先打「訊息 ${draft.name}」看完整內容，看完沒問題再打「確定發 ${draft.name}」。`,
       }])
       return true
     }
