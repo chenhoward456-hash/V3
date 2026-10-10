@@ -113,6 +113,11 @@ export async function listActionableProposals(
 
 /** 一行人話：這筆提案要改什麼。給 LINE 用，沒有 markdown。 */
 export function describeProposal(p: ProposalRow): string {
+  if (p.proposal_type === 'target_date_change') {
+    const cur = (p.current_state ?? {}) as { target_date?: string; target_weight?: number }
+    const nxt = (p.proposed_changes ?? {}) as { target_date?: string }
+    return `目標日 ${cur.target_date ?? '?'} → ${nxt.target_date ?? '?'}（${cur.target_weight ?? '?'}kg 不變）——${p.reasoning ?? ''}`
+  }
   if (p.proposal_type === 'coach_summary_draft') {
     const d = ((p.proposed_changes ?? {}) as { drawDate?: string }).drawDate
     return `教練補充草稿（${d ?? '?'} 血檢）`
@@ -187,6 +192,19 @@ export async function actOnProposal(
       .update({ status: newStatus, reviewed_by: reviewedBy, reviewed_at: now, review_note: reviewNote })
       .eq('id', proposalId)
     return { ok: true, status: newStatus }
+  }
+
+  // target_date_change：目標日到不了 → 只改 clients.target_date（目標體重不動）。
+  // 營養引擎下次跑（體重送出／排程）會用新日期重算需要的赤字。
+  if (proposal.proposal_type === 'target_date_change') {
+    const d = ((proposal.proposed_changes ?? {}) as { target_date?: string }).target_date
+    if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return { ok: false, reason: '提案內容缺日期', code: 'write_failed' }
+    const { error: updErr } = await supabase.from('clients').update({ target_date: d }).eq('id', proposal.client_id)
+    if (updErr) return { ok: false, reason: '目標日寫入失敗: ' + updErr.message, code: 'write_failed' }
+    await supabase.from('pending_proposals')
+      .update({ status: 'approved', reviewed_by: reviewedBy, reviewed_at: now, review_note: reviewNote })
+      .eq('id', proposalId)
+    return { ok: true, status: 'approved' }
   }
 
   // coach_summary_draft：抽血後系統起草的教練補充＋健康目標，套用＝覆寫這兩欄，不動 macros

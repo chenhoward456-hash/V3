@@ -43,7 +43,7 @@
 | macro_adjustment_log.applied_by | system / coach |
 | macro_adjustment_log.trigger_source | trajectory / manual / tdee_weekly |
 | pending_proposals.proposed_by | ai_agent / system_trajectory / system_engine / coach |
-| pending_proposals.proposal_type | macro_adjustment / cardio_change / personal_note / retest_request / body_profile_entry（2026-09-30：套用＝寫進 clients.body_profile，同 key 取代）/ coach_summary_draft（2026-10-09：抽血後起草，套用＝覆寫 clients.coach_summary＋health_goals） |
+| pending_proposals.proposal_type | macro_adjustment / cardio_change / personal_note / retest_request / body_profile_entry（2026-09-30：套用＝寫進 clients.body_profile，同 key 取代）/ coach_summary_draft（2026-10-09：抽血後起草，套用＝覆寫 clients.coach_summary＋health_goals）/ target_date_change（2026-10-10：目標日到不了，套用＝只改 clients.target_date） |
 | pending_proposals.status | pending / approved / rejected / discussing / expired / auto_applied |
 | personal_notes.added_by | coach / ai_agent / system / client_self_report |
 | personal_notes.category | historical_failure / preference / constraint / context / goal_change / physiological_response |
