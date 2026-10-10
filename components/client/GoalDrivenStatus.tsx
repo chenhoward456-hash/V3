@@ -57,9 +57,8 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
       try {
         const lookupId = code || clientId
         // 計畫分頁的 plan 實例只是鏡像顯示，不該再觸發引擎套用寫入（避免同一天在兩個分頁各寫一次 macros）；
-        // 套用由進度分頁的 progress 實例 / 頁層 runEngine 負責。
-        const applyParam = section === 'plan' ? '' : '&autoApply=true'
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}${applyParam}${code ? `&code=${code}` : ''}`)
+        // 寫入由明確操作/記錄/排程處理。
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}${code ? `&code=${code}` : ''}`)
         if (!res.ok) {
           console.error('[GoalDrivenStatus] API 失敗:', res.status, res.statusText, 'lookupId:', lookupId)
           return
@@ -105,10 +104,10 @@ export default function GoalDrivenStatus({ clientId, code, isTrainingDay, onMuta
         // 重新載入營養建議
         fetchedRef.current = false
         setLoading(true)
-        const sugRes = await fetch(`/api/nutrition-suggestions?clientId=${lookupId}&autoApply=true${code ? `&code=${code}` : ''}`)
+        const sugRes = await fetch('/api/nutrition-suggestions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'apply', clientId: lookupId, code }) })
         if (sugRes.ok) {
           const json = await sugRes.json()
-          setData(json.data || json)
+          setData(json.suggestion)
         }
       }
     } catch (e) {

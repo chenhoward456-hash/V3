@@ -620,23 +620,21 @@ export default function ClientDashboard() {
     overrideValues: Record<string, number | null> | null
   } | null>(null)
 
-  // 所有有營養追蹤的學員：頁面載入時自動觸發營養引擎更新目標
+  // 所有有營養追蹤的學員：頁面載入時只讀營養引擎建議
   // 備賽客戶由 GoalDrivenStatus 處理目標套用，但這裡仍需取得引擎數據給 AI Chat
   // 跑營養引擎：
-  //   autoApply=true  → 把建議寫回 DB（首次載入用；備賽客戶一律不套用，由 GoalDrivenStatus 處理）
-  //   autoApply=false → 只取得建議刷新顯示（記錄後用，不動 macros，避免雙重套用）
+  // 只取得建議刷新顯示，不動 macros；寫入由記錄/明確操作/排程處理。
   const engineRunningRef = useRef(false)
   // 回聲用：上一次引擎判定的快照。只在「記錄後判定真的變了」才開口，其餘閉嘴（安靜版）。
   const echoSnapshotRef = useRef<{ status: string; refeedSuggested: boolean } | null>(null)
-  const runEngine = useCallback(async (autoApply: boolean, echo = false) => {
+  const runEngine = useCallback(async (echo = false) => {
     const c = clientData?.client
     if (!c || !c.nutrition_enabled || !c.goal_type) return
     if (engineRunningRef.current) return
     engineRunningRef.current = true
-    const apply = autoApply && !isCompetitionMode(c.client_mode)
     try {
       const code = clientId as string
-      const res = await fetch(`/api/nutrition-suggestions?clientId=${code}${apply ? '&autoApply=true' : ''}&code=${code}`)
+      const res = await fetch(`/api/nutrition-suggestions?clientId=${code}&code=${code}`)
       if (!res.ok) {
         console.error('[AutoNutrition] API 失敗:', res.status)
         return
@@ -655,7 +653,6 @@ export default function ClientDashboard() {
         setNutritionEngineSuggestion(next)
       }
       if (json.coachOverrideInfo) setCoachOverrideInfo(json.coachOverrideInfo)
-      if (apply && mutate) mutate()
     } catch (err) {
       console.error('[AutoNutrition] 錯誤:', err)
     } finally {
@@ -664,7 +661,7 @@ export default function ClientDashboard() {
   }, [clientData?.client, clientId, mutate, showToast])
 
   // 記錄後只刷新引擎建議顯示，不動 macros；echo=true 讓判定變化時回一句話
-  const refreshEngineSuggestion = useCallback(() => { void runEngine(false, true) }, [runEngine])
+  const refreshEngineSuggestion = useCallback(() => { void runEngine(true) }, [runEngine])
 
   // 飲食記錄後：刷新 SWR + 引擎建議（讓「系統在幫我算」的回饋跟記錄動作即時連動）
   const mutateAndRefreshEngine = useCallback(() => {
@@ -678,23 +675,15 @@ export default function ClientDashboard() {
     refreshEngineSuggestion()
   }, [mutateWithTargets, refreshEngineSuggestion])
 
-  // 首次載入跑一次（autoApply）— 但延後到首屏穩定後 + 一天只跑一次寫 DB，
-  // 不然每次點進來都在首屏關鍵期打 nutrition-suggestions(寫 DB) + 觸發整包 refetch，畫面很卡。
+  // 首次載入只讀一次，延後到首屏穩定後。
   const autoNutritionTriggered = useRef(false)
   useEffect(() => {
     if (autoNutritionTriggered.current) return
     const c = clientData?.client
     if (!c || !c.nutrition_enabled || !c.goal_type) return
     autoNutritionTriggered.current = true
-    // 本日是否已 autoApply 過（寫 DB 一天一次就夠）
-    let appliedToday = false
-    try {
-      const key = `hp_engine_applied_${clientId}_${new Date().toISOString().slice(0, 10)}`
-      appliedToday = localStorage.getItem(key) === '1'
-      if (!appliedToday) localStorage.setItem(key, '1')
-    } catch { /* ignore */ }
-    // 延到首屏穩定後再跑，避免和首屏渲染/主請求搶資源
-    const run = () => { void runEngine(!appliedToday) } // 今天已套用過 → 只取建議顯示(false)，不再寫 DB/重抓
+    // Initial load only reads suggestions; adjustments run after explicit records or maintenance.
+    const run = () => { void runEngine() }
     const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback
     const t = ric ? ric(run, { timeout: 2500 }) : window.setTimeout(run, 1500)
     return () => { if (!ric) window.clearTimeout(t as number) }

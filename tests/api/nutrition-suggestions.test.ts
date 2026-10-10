@@ -332,7 +332,7 @@ describe('GET /api/nutrition-suggestions', () => {
   })
 
   describe('coach_macro_override 到期', () => {
-    it('到期時把 previous_values 還原回 clients，而不是只解鎖（否則 coached tier 會永遠卡在覆寫值）', async () => {
+    it('GET 到期覆寫仍只讀，不還原、不解鎖、不寫 audit log', async () => {
       const updates: Record<string, unknown>[] = []
       const logs: Record<string, unknown>[] = []
 
@@ -383,15 +383,8 @@ describe('GET /api/nutrition-suggestions', () => {
       await GET(req)
       await new Promise(r => setTimeout(r, 0)) // fire-and-forget 的 update/insert
 
-      const restore = updates.find(u => 'coach_macro_override' in u)
-      expect(restore, '到期時應該 update clients 還原並解鎖').toBeDefined()
-      expect(restore!.coach_macro_override).toBeNull()
-      expect(restore!.calories_target, '應還原覆寫前的熱量').toBe(1900)
-      expect(restore!.carbs_target, '應還原覆寫前的碳水').toBe(177)
-
-      expect(logs.length, '還原也是 macro 變更，必須寫 macro_adjustment_log').toBeGreaterThan(0)
-      expect(logs[0].applied_by).toBe('system')
-      expect(logs[0].trigger_source).toBe('manual')
+      expect(updates, 'GET must not modify student targets or override').toEqual([])
+      expect(logs, 'GET must not write an audit log').toEqual([])
     })
   })
 })

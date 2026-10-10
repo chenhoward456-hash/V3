@@ -2,12 +2,13 @@
  * 把 onboarding 公版 render 成個別學員版本，推到 admin LINE 讓 Howard copy-paste 給學員
  *
  * Auth: CRON_SECRET header 或 admin session
+ * GET previews only; POST explicitly saves/sends with the same query parameters.
  * Usage: GET /api/admin/push-onboarding?clientId=<uuid>&templateId=<uuid>&riceTrain=500&riceRest=230&targetBf=13
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
-import { pushMessage } from '@/lib/line'
+import { sendManualLineMessages } from '@/lib/manual-line-delivery'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 
 export const maxDuration = 60
@@ -212,6 +213,14 @@ function generateRoadmapText(startWeight: number, targetWeight: number, weeksTot
 }
 
 export async function GET(request: NextRequest) {
+  return handle(request, false)
+}
+
+export async function POST(request: NextRequest) {
+  return handle(request, true)
+}
+
+async function handle(request: NextRequest, command: boolean) {
   if (!verifyAuth(request)) {
     return NextResponse.json({ error: '未授權' }, { status: 401 })
   }
@@ -224,7 +233,7 @@ export async function GET(request: NextRequest) {
   const minKcal = Number(request.nextUrl.searchParams.get('minKcal') ?? 1700)
   const minProtein = Number(request.nextUrl.searchParams.get('minProtein') ?? 180)
   const minFat = Number(request.nextUrl.searchParams.get('minFat') ?? 55)
-  const dryRun = request.nextUrl.searchParams.get('dryRun') === '1'
+  const dryRun = !command || request.nextUrl.searchParams.get('dryRun') === '1'
 
   const supabase = createServiceSupabase()
 
@@ -309,39 +318,27 @@ export async function GET(request: NextRequest) {
     body: renderTemplate(s.body_md, vars),
   }))
 
-  // save rendered to clients table for audit
-  await supabase
-    .from('clients')
-    .update({ onboarding_notes_rendered: { template_id: template.id, rendered_at: new Date().toISOString(), sections } })
-    .eq('id', clientId)
-
   // dry run mode：只回傳 rendered 不推 LINE，讓 Howard 預覽
   if (dryRun) {
     return NextResponse.json({ ok: true, dryRun: true, sections_count: sections.length, sections, computed: portions })
   }
 
+  // save rendered to clients table for audit
+  const { error: saveError } = await supabase
+    .from('clients')
+    .update({ onboarding_notes_rendered: { template_id: template.id, rendered_at: new Date().toISOString(), sections } })
+    .eq('id', clientId)
+  if (saveError) return NextResponse.json({ error: '記事本儲存失敗，尚未推送', saved: false, pushed: false }, { status: 500 })
+
   // push to admin LINE — 一節一則
   const adminLineId = process.env.ADMIN_LINE_USER_ID
-  if (!adminLineId) return NextResponse.json({ ok: true, sections, pushed: false, reason: 'no admin LINE id' })
+  if (!adminLineId) return NextResponse.json({ ok: true, saved: true, sections, pushed: false, reason: 'no admin LINE id' })
 
-  // 前置告知 + 後段說明
-  await pushMessage(adminLineId, [{
-    type: 'text',
-    text: `📋 ${c.name} onboarding 記事本（${sections.length} 則）\n\n下面每則是一個獨立記事本，請逐則複製貼到你跟學員的 LINE 對話\n\n變數已自動代入 ${c.name} 的數字`
-  }]).catch(() => {})
-
-  for (const s of sections) {
-    const text = `═══ ${s.title} ═══\n\n${s.body}`
-    // LINE 上限 5000 字，個別記事本長度應該都在內
-    await pushMessage(adminLineId, [{ type: 'text', text }]).catch(() => {})
-    // 小延遲避免訊息順序亂掉
-    await new Promise(r => setTimeout(r, 400))
-  }
-
-  await pushMessage(adminLineId, [{
-    type: 'text',
-    text: `✅ ${sections.length} 則 onboarding 推完。複製貼上給 ${c.name} 後，跟他確認他收到了`
-  }]).catch(() => {})
-
-  return NextResponse.json({ ok: true, sections_count: sections.length, pushed: true })
+  const texts = [
+    `📋 ${c.name} onboarding 記事本（${sections.length} 則）\n\n下面每則是一個獨立記事本，請逐則複製貼到你跟學員的 LINE 對話\n\n變數已自動代入 ${c.name} 的數字`,
+    ...sections.map(s => `═══ ${s.title} ═══\n\n${s.body}`),
+    `✅ ${sections.length} 則 onboarding 推完。複製貼上給 ${c.name} 後，跟他確認他收到了`,
+  ]
+  const delivery = await sendManualLineMessages(adminLineId, texts.map(text => [{ type: 'text', text }]), 400)
+  return NextResponse.json({ ok: delivery.pushed, saved: true, sections_count: sections.length, ...delivery }, { status: delivery.pushed ? 200 : 502 })
 }

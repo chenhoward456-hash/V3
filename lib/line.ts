@@ -52,8 +52,8 @@ export function verifyLineSignature(body: string, signature: string): boolean {
 }
 
 /** 呼叫 LINE Messaging API（含重試機制） */
-async function lineAPI(path: string, body?: object): Promise<Response> {
-  const maxRetries = 3
+async function lineAPI(path: string, body?: object, retry = true): Promise<Response> {
+  const maxRetries = retry ? 3 : 1
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const res = await fetch(`https://api.line.me/v2/bot${path}`, {
       method: body ? 'POST' : 'GET',
@@ -123,8 +123,8 @@ export async function showLoadingIndicator(userId: string, loadingSeconds = 30):
 }
 
 /** 推播訊息給特定用戶 */
-export async function pushMessage(to: string, messages: LineMessage[]) {
-  const res = await lineAPI('/message/push', { to, messages })
+export async function pushMessage(to: string, messages: LineMessage[], options?: { deliveryReceipt?: boolean }) {
+  const res = await lineAPI('/message/push', { to, messages }, !options?.deliveryReceipt)
   // Quota fallback: when THIS OA's monthly push quota is exhausted (429) and the
   // target is Howard (admin), relay through the howard-line-bot OA (separate
   // quota) so admin notifications never go dark. Client-facing pushes can't be
@@ -150,8 +150,11 @@ export async function pushMessage(to: string, messages: LineMessage[]) {
         } else {
           logger.error('借道 howard-line-bot 也失敗', undefined, { status: relayRes.status })
         }
+        // Manual commands opt in to the actual relay receipt; legacy callers retain the original response.
+        if (options?.deliveryReceipt) return relayRes
       } catch (err) {
         logger.error('借道 howard-line-bot 連線失敗', err instanceof Error ? err : undefined)
+        if (options?.deliveryReceipt) throw err
       }
     }
   }

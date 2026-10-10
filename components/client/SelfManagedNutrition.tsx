@@ -73,7 +73,7 @@ export default function SelfManagedNutrition({
 
     const fetchSuggestion = async () => {
       try {
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}&autoApply=true&code=${uniqueCode}`)
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${clientId}&code=${uniqueCode}`)
         if (!res.ok) return
         const json = await res.json()
         if (json.suggestion) {
@@ -127,6 +127,15 @@ export default function SelfManagedNutrition({
         body: JSON.stringify(payload),
       })
       if (res.ok) {
+        const applied = await fetch('/api/nutrition-suggestions', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'apply', clientId, code: uniqueCode }),
+        })
+        if (!applied.ok) {
+          setSetupError('目標已儲存，但建議初始化失敗。請稍後重新整理。')
+          if (onMutate) onMutate()
+          return
+        }
         if (onMutate) onMutate()
         window.location.reload()
       } else {

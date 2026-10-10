@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { createServiceSupabase } from '@/lib/supabase'
-import { actOnProposal, sweepExpiredProposals, type ProposalAction } from '@/lib/proposal-actions'
+import { actOnProposal, isProposalExpired, DEFAULT_TTL_DAYS, type ProposalAction } from '@/lib/proposal-actions'
 
 export const dynamic = 'force-dynamic'
 const supabase = createServiceSupabase()
@@ -15,13 +15,12 @@ function checkAuth(request: NextRequest): boolean {
 export async function GET(request: NextRequest) {
   if (!checkAuth(request)) return NextResponse.json({ error: '未授權' }, { status: 401 })
 
-  // 先把過了 expires_at 卻還掛 pending 的掃成 expired ——
-  // 沒這步，這頁的「待審」會把屍體算進去（Sean 那 10 筆就是這樣長出來的）。
-  await sweepExpiredProposals(supabase)
-
   const { searchParams } = new URL(request.url)
   const statusFilter = searchParams.get('status') ?? 'pending'
   const clientId = searchParams.get('clientId')
+  const now = new Date()
+  const nowIso = now.toISOString()
+  const fallbackExpiry = new Date(now.getTime() - DEFAULT_TTL_DAYS * 86400000).toISOString()
 
   let query = supabase
     .from('pending_proposals')
@@ -34,13 +33,20 @@ export async function GET(request: NextRequest) {
     .order('proposed_at', { ascending: false })
     .limit(50)
 
-  if (statusFilter !== 'all') query = query.eq('status', statusFilter)
+  if (statusFilter === 'pending') {
+    query = query.eq('status', 'pending').or(`expires_at.gte.${nowIso},and(expires_at.is.null,proposed_at.gte.${fallbackExpiry})`)
+  } else if (statusFilter === 'expired') {
+    query = query.or(`status.eq.expired,and(status.eq.pending,or(expires_at.lt.${nowIso},and(expires_at.is.null,proposed_at.lt.${fallbackExpiry})))`)
+  } else if (statusFilter !== 'all') query = query.eq('status', statusFilter)
   if (clientId) query = query.eq('client_id', clientId)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ success: true, data: data ?? [] })
+  const rows = (data ?? []).map(p => p.status === 'pending' && isProposalExpired(p, now)
+    ? { ...p, status: 'expired', reviewed_by: 'system', reviewed_at: null, review_note: '已過有效期，等待排程作廢' }
+    : p).filter(p => statusFilter === 'all' || p.status === statusFilter)
+  return NextResponse.json({ success: true, data: rows })
 }
 
 // POST: act on a proposal (approve / reject / discuss)

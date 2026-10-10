@@ -1,3 +1,5 @@
+import { getClientAccessBlock } from '@/lib/active-client'
+import { isCoachOverrideExpired, restoreExpiredCoachOverride, type CoachMacroOverride } from '@/lib/coach-macro-override'
 import { getTaiwanDate } from '@/lib/date-utils'
 import { calculateLabStatus } from '@/utils/labStatus'
 import { isInAutoAdjustCooldown } from '@/lib/auto-adjust-cooldown'
@@ -38,6 +40,27 @@ function getAdminSession(request: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  return analyzeNutrition(request, false)
+}
+
+// Writes require an explicit JSON command; GET query flags are never permission.
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    if (body?.action !== 'apply' || typeof body.clientId !== 'string' || !body.clientId) {
+      return NextResponse.json({ error: '需要 action: apply 和 clientId' }, { status: 400 })
+    }
+    const url = new URL(request.url)
+    url.search = ''
+    url.searchParams.set('clientId', body.clientId)
+    if (typeof body.code === 'string') url.searchParams.set('code', body.code)
+    return analyzeNutrition(new NextRequest(url, { headers: request.headers }), true)
+  } catch {
+    return NextResponse.json({ error: '無效的 JSON' }, { status: 400 })
+  }
+}
+
+async function analyzeNutrition(request: NextRequest, allowWrites: boolean) {
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
   const code = searchParams.get('code')
@@ -48,7 +71,7 @@ export async function GET(request: NextRequest) {
   // autoApply: goal-driven 模式允許客戶端自動套用（與 body-composition 路由一致）
   // 其他模式仍需 admin 權限
   const isAdmin = getAdminSession(request)
-  const wantsAutoApply = searchParams.get('autoApply') === 'true'
+  const wantsAutoApply = allowWrites
 
   // 驗證權限：admin session 或提供正確的 unique_code
   if (!isAdmin && !code) {
@@ -76,6 +99,11 @@ export async function GET(request: NextRequest) {
     // 非 admin 需驗證 unique_code 匹配
     if (!isAdmin && client.unique_code !== code) {
       return NextResponse.json({ error: '未授權' }, { status: 401 })
+    }
+
+    if (allowWrites) {
+      const block = getClientAccessBlock(client)
+      if (block) return NextResponse.json({ error: block.message }, { status: block.status })
     }
 
     // 2. 取得近 30 天體組成數據
@@ -441,58 +469,22 @@ export async function GET(request: NextRequest) {
     // 教練覆寫鎖定：教練手動調整過營養目標
     // Timed Coach Override: 覆寫期間（含 autoApply）都鎖定，確保教練設定值不被覆蓋
     let justRestored = false
-    let coachOverride = client.coach_macro_override as {
-      locked_at: string
-      expires_at?: string | null
-      locked_fields: string[]
-      override_values?: Record<string, number | null>
-      previous_values?: Record<string, number | null>
-      reason?: string | null
-    } | null
-
-    // Check if coach override has expired
-    if (coachOverride && coachOverride.expires_at) {
-      const now = new Date()
-      if (new Date(coachOverride.expires_at) <= now) {
-        // 覆寫到期：**先還原 previous_values，再解鎖**。
-        //
-        // 原本只把 coach_macro_override 設成 null，override_values 就永久留在 clients 上。
-        // 對 coached/protocol tier 特別危險：那兩種 tier 的引擎本來就不會自動套用
-        // （canAutoApply 的 !isCoachManaged），所以沒有任何東西會把數值改回來——
-        // 教練設一個「兩天的 Peak Week 掏空 macro」，兩天後鎖打開了，學員卻永遠停在掏空碳水。
-        // previous_values 一直有寫入（client-macro-adjust / admin clients route），但從沒被讀過。
-        const prev = coachOverride.previous_values
-        const restore: Record<string, number | null> = {}
-        if (prev) {
-          for (const [k, v] of Object.entries(prev)) {
-            if (v != null && Number.isFinite(Number(v))) restore[k] = Number(v)
-          }
-        }
-        // 稽核 E20：原本 fire-and-forget（沒 await）→ 同一個 request 接著跑自動套用，兩筆 update 互相競爭；
-        // log 的 old_macros 是 NOT NULL，override_values 缺的時候寫 null 會靜默失敗。
-        const clearPatch: Record<string, unknown> = { ...restore, coach_macro_override: null }
-        const { error: restoreErr } = await supabase.from('clients').update(clearPatch).eq('id', client.id)
-        if (restoreErr) {
-          logger.error('coach override expiry restore failed', restoreErr, { clientId: client.id })
-        } else {
-          Object.assign(client, restore)   // 後面的邏輯用還原後的數字
-          justRestored = true               // 這次 request 不再自動套用，避免剛還原就被蓋掉
-        }
-
-        if (!restoreErr && Object.keys(restore).length > 0) {
-          // 紅線：所有 macro 變更都要寫 macro_adjustment_log（applied_by 只能 system/coach）
-          const { error: logErr } = await supabase.from('macro_adjustment_log').insert({
-            client_id: client.id,
-            applied_by: 'system',
-            trigger_source: 'manual',
-            old_macros: coachOverride.override_values ?? {},
-            new_macros: restore,
-            reason: `教練覆寫到期（${coachOverride.expires_at}），自動還原覆寫前的營養目標`,
-          })
-          if (logErr) logger.error('coach override expiry log failed', logErr, { clientId: client.id })
-        }
-        coachOverride = null
+    let coachOverride = client.coach_macro_override as CoachMacroOverride | null
+    const overrideExpired = isCoachOverrideExpired(coachOverride)
+    // Reading shows the actual stored targets. Daily maintenance restores expired
+    // overrides even for coached/protocol clients; viewing never clears a lock.
+    if (allowWrites && overrideExpired && coachOverride) {
+      const restore = await restoreExpiredCoachOverride(supabase, client.id, coachOverride)
+      if (restore.error) {
+        logger.error('coach override expiry restore/log failed', restore.error, { clientId: client.id })
+        return NextResponse.json({ error: restore.error, restored: restore.restored }, { status: 500 })
       }
+      if (!restore.restored) {
+        return NextResponse.json({ error: '教練設定已變更，請重新載入後再試' }, { status: 409 })
+      }
+      Object.assign(client, restore.values)
+      justRestored = true
+      coachOverride = null
     }
 
     // coach_macro_override 一旦設定，任何 caller (含 admin) 都不能自動覆寫。
@@ -500,7 +492,9 @@ export async function GET(request: NextRequest) {
     // 避免「教練手動設定 → 自己開 dashboard → 立刻被自家引擎吃掉」的悲劇。
     if (coachOverride) {
       coachLocked = true
-      suggestion.message += '\n\n🔒 教練已手動設定你的營養目標，系統建議僅供參考，不會自動調整。'
+      suggestion.message += overrideExpired
+        ? '\n\n🔒 教練覆寫已到期，等待排程還原；目前顯示的目標尚未變更。'
+        : '\n\n🔒 教練已手動設定你的營養目標，系統建議僅供參考，不會自動調整。'
     }
 
     // 比賽模式 routing：
@@ -593,7 +587,7 @@ export async function GET(request: NextRequest) {
 
         if (!updateErr) {
           applied = true
-          await supabase.from('macro_adjustment_log').insert({
+          const { error: logError } = await supabase.from('macro_adjustment_log').insert({
             client_id: client.id,
             applied_by: 'system',
             trigger_source: 'tdee_weekly',
@@ -601,9 +595,11 @@ export async function GET(request: NextRequest) {
             new_macros: updates,
             reason: `nutrition-suggestions auto-apply (${client.subscription_tier}): ${(suggestion.message ?? '').slice(0, 200)}`,
             trajectory_data: { autoApply: true, status: suggestion.status },
-          }).then(() => {}, () => {})
+          })
+          if (logError) return NextResponse.json({ error: '目標已更新，但調整紀錄儲存失敗', applied: true }, { status: 500 })
         } else {
-          console.error('[AutoNutrition] DB 更新失敗:', updateErr.message, 'clientId:', client.id, 'updates:', updates)
+          logger.error('Nutrition target update failed', updateErr, { clientId: client.id })
+          return NextResponse.json({ error: '營養目標儲存失敗', applied: false }, { status: 500 })
         }
       }
     }
@@ -618,6 +614,8 @@ export async function GET(request: NextRequest) {
       applied,
       coachLocked,
       coachOverrideInfo,
+      overrideExpired: overrideExpired && !justRestored,
+      restored: justRestored,
       isNewUser,
       meta: {
         latestWeight,

@@ -40,11 +40,6 @@ export async function GET(request: NextRequest) {
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
     const sinceDate90 = ninetyDaysAgo.toISOString().split('T')[0]
 
-    // 只有教練查看才更新 last viewed（學員自助看報告不算教練看過）
-    if (authorized) {
-      supabase.from('clients').update({ coach_last_viewed_at: new Date().toISOString() }).eq('id', realId).then(() => {})
-    }
-
     const today = new Date().toISOString().split('T')[0]
     const [suppRes, logsRes, wellRes, trainRes, bodyRes, labRes, nutritionRes, trainingSetsRes, notesRes] = await Promise.all([
       supabase.from('supplements').select('*').eq('client_id', realId).is('archived_at', null),
@@ -81,4 +76,21 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 })
   }
+}
+
+
+// A successful coach detail view explicitly records this separate event.
+export async function POST(request: NextRequest) {
+  const { authorized } = await verifyCoachAuth(request)
+  if (!authorized) return NextResponse.json({ error: '未授權' }, { status: 401 })
+  try {
+    const { action, clientId } = await request.json()
+    if (action !== 'viewed' || typeof clientId !== 'string' || !clientId) return NextResponse.json({ error: '需要 action: viewed 和 clientId' }, { status: 400 })
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)
+    const { data: client, error: lookupError } = await supabase.from('clients').select('id').eq(isUUID ? 'id' : 'unique_code', clientId).single()
+    if (lookupError || !client) return NextResponse.json({ error: '找不到學員資料' }, { status: 404 })
+    const { error } = await supabase.from('clients').update({ coach_last_viewed_at: new Date().toISOString() }).eq('id', client.id)
+    if (error) return NextResponse.json({ error: '查看紀錄儲存失敗' }, { status: 500 })
+    return NextResponse.json({ success: true })
+  } catch { return NextResponse.json({ error: '無效的 JSON' }, { status: 400 }) }
 }

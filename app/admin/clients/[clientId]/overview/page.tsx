@@ -101,6 +101,7 @@ export default function ClientOverview() {
       setNutritionLogs(data.nutritionLogs || [])
       setTrainingSets(data.trainingSets || [])
       setPersonalNotes(data.personalNotes || [])
+      void fetch('/api/client-overview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'viewed', clientId }) }).catch(() => {})
       // 同時抓取營養分析
       if (data.client?.goal_type && data.client?.nutrition_enabled) {
         fetch(`/api/nutrition-suggestions?clientId=${data.client.id}`)

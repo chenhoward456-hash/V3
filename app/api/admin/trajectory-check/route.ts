@@ -5,12 +5,13 @@
  * client without waiting for the daily cron tick.
  *
  * Auth: CRON_SECRET header OR admin session
+ * GET previews only; POST explicitly saves/sends with the same query parameters.
  * Usage: GET /api/admin/trajectory-check?clientId=<uuid>
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
-import { pushMessage } from '@/lib/line'
+import { sendManualLineMessages } from '@/lib/manual-line-delivery'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { computeTrajectoryAdjustment, type MacroBounds } from '@/lib/trajectory-adjust'
 import { generateNutritionSuggestion, type NutritionInput } from '@/lib/nutrition-engine'
@@ -31,6 +32,15 @@ function verifyAuth(request: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  return handle(request, false)
+}
+
+export async function POST(request: NextRequest) {
+  return handle(request, true)
+}
+
+async function handle(request: NextRequest, command: boolean) {
+  command = command && request.nextUrl.searchParams.get('dryRun') !== '1'
   if (!verifyAuth(request)) {
     return NextResponse.json({ error: '未授權' }, { status: 401 })
   }
@@ -193,8 +203,9 @@ export async function GET(request: NextRequest) {
     const detail = blockReasons.map(r => `· ${r}`).join('\n')
     const alertMsg = `${headline}\n\n${lay}\n\n${labFlags ? `⚠️ 異常項目：${labFlags}\n\n` : ''}細節：\n${detail}\n\n👇 一鍵處理（按下去會真的改 DB）`
 
-    if (coachLineId) {
-      await pushMessage(coachLineId, [{
+    let delivery
+    if (command && coachLineId) {
+      delivery = await sendManualLineMessages(coachLineId, [[{
         type: 'text',
         text: alertMsg,
         quickReply: {
@@ -205,16 +216,17 @@ export async function GET(request: NextRequest) {
             { type: 'action', action: { type: 'postback', label: '🛠 進後台處理', data: `coach_action:cancel:${c.id}`, displayText: `${c.name} 進後台手動處理` } },
           ],
         },
-      } as any]).catch(() => {})
+      } as any]])
     }
 
     return NextResponse.json({
-      ok: true, decision: 'blocked_alert_pushed',
+      ok: !delivery || delivery.pushed, ...delivery, saved: false,
+      decision: delivery?.pushed ? 'blocked_alert_pushed' : 'blocked_preview',
       kcalAdjustmentNeeded: kcalAbs,
       blockReasons,
       gates: { cuttingBlocked, metabolicHighStress, tdeeAnomaly, engineNoAutoApply },
       trajResult,
-    })
+    }, { status: delivery && !delivery.pushed ? 502 : 200 })
   }
 
   // safety pass → 會建 proposal（這裡不真的建，只 preview）
@@ -225,24 +237,25 @@ export async function GET(request: NextRequest) {
       : ''
   const previewMsg = `📋 [系統會建提案] ${c.name} (測試 — 不真的建)\n\n熱量 ${c.calories_target} → ${trajResult.newMacros?.calories_target} kcal\n${carbLine}\n\n${trajResult.reason}${trajResult.hitBoundary ? `\n\n⚠️ ${trajResult.boundaryDetail}` : ''}\n\n→ 隔天 cron 才會真的建 proposal\n\n👇 hitBoundary 的「解根因」按鈕（會真的改 DB）`
 
-  if (coachLineId) {
+  let delivery
+  if (command && coachLineId) {
     // hitBoundary 才掛根因鍵；正常 proposal 走隔天 cron，這裡是 preview 不真的建，所以沒核准鍵
     const items: any[] = trajResult.hitBoundary ? [
       { type: 'action', action: { type: 'postback', label: '📅 延 14 天', data: `coach_action:extend_target:${c.id}`, displayText: `${c.name} 改延 14 天` } },
       { type: 'action', action: { type: 'postback', label: '🎯 放鬆 1kg', data: `coach_action:ease_target:${c.id}`, displayText: `${c.name} 放鬆 target ±1 kg` } },
       { type: 'action', action: { type: 'postback', label: '🏃 +30min 有氧', data: `coach_action:add_cardio:${c.id}`, displayText: `${c.name} cardio +30 min` } },
     ] : []
-    await pushMessage(coachLineId, [{
+    delivery = await sendManualLineMessages(coachLineId, [[{
       type: 'text', text: previewMsg,
       ...(items.length > 0 ? { quickReply: { items } } : {}),
-    } as any]).catch(() => {})
+    } as any]])
   }
 
   return NextResponse.json({
-    ok: true, decision: 'would_propose',
+    ok: !delivery || delivery.pushed, ...delivery, saved: false, decision: 'would_propose',
     newMacros: trajResult.newMacros,
     reason: trajResult.reason,
     hitBoundary: trajResult.hitBoundary,
     trajResult,
-  })
+  }, { status: delivery && !delivery.pushed ? 502 : 200 })
 }

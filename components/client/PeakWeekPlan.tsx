@@ -117,7 +117,7 @@ export default function PeakWeekPlan({ clientId, code, competitionDate, bodyWeig
     const fetchPlan = async () => {
       try {
         const queryId = code || clientId
-        const res = await fetch(`/api/nutrition-suggestions?clientId=${queryId}${code ? `&code=${code}` : ''}&autoApply=true`)
+        const res = await fetch(`/api/nutrition-suggestions?clientId=${queryId}${code ? `&code=${code}` : ''}`)
         if (!res.ok) return
         const data = await res.json()
         if (data.suggestion?.peakWeekPlan) {

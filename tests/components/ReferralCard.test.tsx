@@ -116,3 +116,15 @@ describe('ReferralCard', () => {
     })
   })
 })
+
+it('does not generate on mount and creates only after the student clicks', async () => {
+  mockFetch.mockReset()
+  mockSuccessResponse({ code: null, totalReferrals: 0, rewardDays: 0 })
+  render(<ReferralCard clientId="QAonly" />)
+  await screen.findByRole('button', { name: '產生推薦碼' })
+  expect(mockFetch).toHaveBeenCalledTimes(1)
+  mockSuccessResponse({ code: 'REF-CREATED', totalReferrals: 0, rewardDays: 0 })
+  fireEvent.click(screen.getByRole('button', { name: '產生推薦碼' }))
+  await screen.findByText('REF-CREATED')
+  expect(mockFetch).toHaveBeenLastCalledWith('/api/referral', expect.objectContaining({ method: 'POST', body: JSON.stringify({ action: 'create_code', clientId: 'QAonly' }) }))
+})

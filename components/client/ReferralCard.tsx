@@ -14,6 +14,8 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchReferral = async () => {
@@ -79,7 +81,23 @@ export default function ReferralCard({ clientId }: ReferralCardProps) {
     )
   }
 
-  if (error || !code) return null
+  if (error) return null
+  if (!code) return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-3">
+      <h3 className="text-sm font-bold text-slate-900">推薦好友</h3>
+      <p className="text-sm text-slate-600 mt-2 mb-4">產生你的推薦碼，再分享給朋友。</p>
+      <button disabled={creating} className="rounded-xl bg-primary-600 text-white px-4 py-2 text-sm font-semibold disabled:opacity-50" onClick={async () => {
+        setCreating(true); setCreateError(null)
+        try {
+          const res = await fetch('/api/referral', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create_code', clientId }) })
+          const json = await res.json()
+          if (!res.ok || !json.code) throw new Error('產生失敗，請重試')
+          setCode(json.code); setTotalReferrals(json.totalReferrals || 0); setRewardDays(json.rewardDays || 0)
+        } catch { setCreateError('產生失敗，請重試') } finally { setCreating(false) }
+      }}>{creating ? '產生中…' : '產生推薦碼'}</button>
+      {createError && <p role="alert" className="text-sm text-red-700 mt-2">{createError}</p>}
+    </div>
+  )
 
   return (
     <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200 p-5 mb-3">

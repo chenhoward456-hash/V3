@@ -2,6 +2,7 @@
  * 把血檢建議推到 admin LINE 讓 Howard copy 給學員去抽血。
  *
  * Auth: CRON_SECRET header 或 admin session
+ * GET previews only; POST explicitly saves/sends with the same query parameters.
  * Usage: GET /api/admin/push-lab-recommendation?clientId=<uuid>&templateId=<uuid>&dryRun=1
  *        加 &raw=1 可看公版原樣（不跑減法）
  *
@@ -17,7 +18,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
-import { pushMessage } from '@/lib/line'
+import { sendManualLineMessages } from '@/lib/manual-line-delivery'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { buildLabOrder, type TemplateItem } from '@/lib/lab-order'
 
@@ -31,6 +32,14 @@ function verifyAuth(request: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  return handle(request, false)
+}
+
+export async function POST(request: NextRequest) {
+  return handle(request, true)
+}
+
+async function handle(request: NextRequest, command: boolean) {
   if (!verifyAuth(request)) {
     return NextResponse.json({ error: '未授權' }, { status: 401 })
   }
@@ -40,7 +49,7 @@ export async function GET(request: NextRequest) {
 
   const templateIdParam = request.nextUrl.searchParams.get('templateId')
   const orientationParam = request.nextUrl.searchParams.get('orientation') ?? 'target'  // target / general_health
-  const dryRun = request.nextUrl.searchParams.get('dryRun') === '1'
+  const dryRun = !command || request.nextUrl.searchParams.get('dryRun') === '1'
 
   const supabase = createServiceSupabase()
 
@@ -163,17 +172,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, dryRun: true, snapshot, messages })
   }
 
-  await supabase.from('clients').update({ lab_panel_recommended: snapshot }).eq('id', clientId)
+  const { error: saveError } = await supabase.from('clients').update({ lab_panel_recommended: snapshot }).eq('id', clientId)
+  if (saveError) return NextResponse.json({ error: '血檢建議儲存失敗，尚未推送', saved: false, pushed: false }, { status: 500 })
 
   const adminLineId = process.env.ADMIN_LINE_USER_ID
   if (!adminLineId) {
-    return NextResponse.json({ ok: true, snapshot, pushed: false, reason: 'no admin LINE id' })
+    return NextResponse.json({ ok: true, saved: true, snapshot, pushed: false, reason: 'no admin LINE id' })
   }
 
-  for (const text of messages) {
-    await pushMessage(adminLineId, [{ type: 'text', text }]).catch(() => {})
-    await new Promise(r => setTimeout(r, 400))
-  }
-
-  return NextResponse.json({ ok: true, snapshot, pushed: true, message_count: messages.length })
+  const delivery = await sendManualLineMessages(adminLineId, messages.map(text => [{ type: 'text', text }]), 400)
+  return NextResponse.json({ ok: delivery.pushed, saved: true, snapshot, message_count: messages.length, ...delivery }, { status: delivery.pushed ? 200 : 502 })
 }

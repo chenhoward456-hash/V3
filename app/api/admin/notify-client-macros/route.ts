@@ -3,12 +3,13 @@
  * 不算新 macros、不寫 DB，只是把現狀整理成人話訊息推給客戶。
  *
  * Auth: CRON_SECRET header 或 admin session
+ * GET previews only; POST explicitly saves/sends with the same query parameters.
  * Usage: GET /api/admin/notify-client-macros?clientId=<uuid>
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase'
-import { pushMessage } from '@/lib/line'
+import { sendManualLineMessages } from '@/lib/manual-line-delivery'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 
 function verifyAuth(request: NextRequest): boolean {
@@ -19,6 +20,15 @@ function verifyAuth(request: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  return handle(request, false)
+}
+
+export async function POST(request: NextRequest) {
+  return handle(request, true)
+}
+
+async function handle(request: NextRequest, command: boolean) {
+  command = command && request.nextUrl.searchParams.get('dryRun') !== '1'
   if (!verifyAuth(request)) {
     return NextResponse.json({ error: '未授權' }, { status: 401 })
   }
@@ -91,12 +101,15 @@ export async function GET(request: NextRequest) {
 
   const text = lines.join('\n')
 
-  await pushMessage(c.line_user_id, [{ type: 'text', text }]).catch((e) => {
-    console.error('push to client failed', e)
-  })
+  if (!command) return NextResponse.json({ ok: true, pushed: false, text, macros: { calories: c.calories_target, protein: c.protein_target, fat: c.fat_target, carbs_training: c.carbs_training_day, carbs_rest: c.carbs_rest_day } })
+
+  const delivery = await sendManualLineMessages(c.line_user_id, [[{ type: 'text', text }]])
+  if (!delivery.pushed) return NextResponse.json({ ok: false, saved: false, ...delivery }, { status: 502 })
 
   return NextResponse.json({
     ok: true,
+    ...delivery,
+    saved: false,
     pushed_to: c.name,
     days_to_comp: daysToComp,
     macros: {
