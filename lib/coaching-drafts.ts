@@ -13,6 +13,7 @@
  * ⚠️ 合規、持久化、推播回填這三件事都留在這裡，不要讓呼叫端各寫一份——
  *    「先 insert 再推播」那條是踩過回歸 bug 才立的（推播跳了但儀表板查無此筆）。
  */
+import { coachingEvidence, type CoachingEvidence } from './coaching-evidence'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { computeWeeklyCoachingDraft, type WCInput, type WeeklyCoachingDraft } from './weekly-coaching'
 import { sendRoutineReminder } from './notify'
@@ -31,6 +32,7 @@ export type CoachingDraft = WeeklyCoachingDraft & {
   uniqueCode: string
   hasPush: boolean
   hasLine: boolean
+  evidence: CoachingEvidence
 }
 
 type ClientRow = {
@@ -95,6 +97,9 @@ export async function buildCoachingDrafts(
       .gte('applied_at', new Date(Date.now() - 60 * 86_400_000).toISOString()),
   ])
 
+  const results = [bodyR, nutR, trnR, welR, labR, pushR, setsR, macroR]
+  if (results.some(result => result.error)) throw new Error('部分資料讀取失敗，尚未生成草稿；請重試')
+
   const pushSet = new Set((pushR.data || []).map((r: { client_id: string }) => r.client_id))
   const bodyByC = group(bodyR.data), nutByC = group(nutR.data), trnByC = group(trnR.data)
   const welByC = group(welR.data), labByC = group(labR.data), macroByC = group(macroR.data)
@@ -117,6 +122,7 @@ export async function buildCoachingDrafts(
       clientId: c.id,
       name: c.name,
       uniqueCode: c.unique_code,
+      evidence: coachingEvidence(now, { weight: bodyByC.get(c.id) || [], nutrition: nutByC.get(c.id) || [], training: trnByC.get(c.id) || [], wellness: welByC.get(c.id) || [], labs: labByC.get(c.id) || [], trainingSets: setsByC.get(c.id) || [], macroChanges: macroByC.get(c.id) || [] }),
       hasPush: pushSet.has(c.id),
       hasLine: !!c.line_user_id,
       ...computeWeeklyCoachingDraft(input),
