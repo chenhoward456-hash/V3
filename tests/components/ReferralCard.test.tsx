@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import ReferralCard from '@/components/client/ReferralCard'
 
 // ---------------------------------------------------------------------------
@@ -127,4 +127,23 @@ it('does not generate on mount and creates only after the student clicks', async
   fireEvent.click(screen.getByRole('button', { name: '產生推薦碼' }))
   await screen.findByText('REF-CREATED')
   expect(mockFetch).toHaveBeenLastCalledWith('/api/referral', expect.objectContaining({ method: 'POST', body: JSON.stringify({ action: 'create_code', clientId: 'QAonly' }) }))
+})
+
+it('submits once for synchronous clicks and allows retry after failure', async () => {
+  mockFetch.mockReset()
+  mockSuccessResponse({ code: null, totalReferrals: 0, rewardDays: 0 })
+  render(<ReferralCard clientId="QAonly" />)
+  const button = await screen.findByRole('button', { name: '產生推薦碼' })
+  let finish!: (response: unknown) => void
+  mockFetch.mockReturnValueOnce(new Promise(resolve => { finish = resolve }))
+  mockFetch.mockReturnValue(new Promise(() => {}))
+  act(() => { button.click(); button.click() })
+  expect(mockFetch).toHaveBeenCalledTimes(2)
+  await act(async () => { finish({ ok: false, json: async () => ({ error: 'fixture failure' }) }) })
+  expect(await screen.findByRole('alert')).toHaveTextContent('產生失敗，請重試')
+  expect(button).not.toBeDisabled()
+  mockSuccessResponse({ code: 'REF-RETRIED', totalReferrals: 0, rewardDays: 0 })
+  act(() => { button.click(); button.click() })
+  await screen.findByText('REF-RETRIED')
+  expect(mockFetch).toHaveBeenCalledTimes(3)
 })
