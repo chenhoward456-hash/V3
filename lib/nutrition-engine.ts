@@ -3189,6 +3189,38 @@ function generateCutSuggestion(
 // 給定目標體重 + 目標日期 + 當前 TDEE → 精確計算每日卡路里
 // 邏輯：需要減的重量 × 動態能量密度 ÷ 剩餘天數 = 每日赤字 → TDEE - 赤字 = 目標卡路里
 // 文獻：Hall 2008 動態模型取代靜態 7700 kcal/kg
+/**
+ * 「到不到得了」的那半句：照**實際**多週體重走勢講，不是照計畫赤字講。
+ *
+ * 為什麼（2026-10-10）：這裡原本三個分支都直接寫「穩穩達標／可以達標」—— 那只是「計畫赤字×天數 ≥ 要減的量」，
+ * 從沒對照學員實際體重。Sean 9/12 拿到「預計每週掉 0.72kg…穩穩達標」，一個月後實際趨勢是到不了；
+ * 林宥任「進度超前…穩穩達標」靠的是單一週 -1.23%。系統不能替還沒發生的結果蓋章。
+ * 用最近最多 4 個週均值做回歸；不到 3 週就只講計畫，不下結論。
+ */
+export function describeActualPace(
+  weeklyWeights: { week: number; avgWeight: number }[],
+  remainingKg: number,
+  daysLeft: number,
+): string {
+  const seen = new Set<number>()
+  const pts = weeklyWeights
+    .filter(w => w.week <= 3 && Number.isFinite(w.avgWeight) && w.avgWeight > 0 && !seen.has(w.week) && seen.add(w.week))
+  if (pts.length < 3 || remainingKg <= 0) return '照這個計畫算得到；實際體重再看 1–2 週才講得準。'
+  const xs = pts.map(p => -p.week)
+  const mx = xs.reduce((a, b) => a + b, 0) / xs.length
+  const my = pts.reduce((a, p) => a + p.avgWeight, 0) / pts.length
+  let num = 0, den = 0
+  xs.forEach((x, i) => { num += (x - mx) * (pts[i].avgWeight - my); den += (x - mx) ** 2 })
+  if (den === 0) return '照這個計畫算得到；實際體重再看 1–2 週才講得準。'
+  const slope = num / den  // kg/週，負＝在掉
+  const weeks = pts.length
+  if (slope > -0.05) return `但近 ${weeks} 週實際體重沒在往下走，照現在的執行到不了目標，要先找出原因。`
+  const loss = -slope
+  const weeksNeeded = remainingKg / loss
+  if (weeksNeeded * 7 <= daysLeft + 7) return `近 ${weeks} 週實際每週掉 ${loss.toFixed(2)}kg，跟得上。`
+  return `但近 ${weeks} 週實際每週只掉 ${loss.toFixed(2)}kg，照這速度要約 ${Math.ceil(weeksNeeded)} 週，比目標日晚。`
+}
+
 function generateGoalDrivenCut(
   input: NutritionInput,
   estimatedTDEE: number,
@@ -3694,7 +3726,7 @@ function generateGoalDrivenCut(
     message = effectiveDailyDeficit < requiredDailyDeficit
       ? `進度超前！赤字已從 ${requiredDailyDeficit} 放鬆至 ${effectiveDailyDeficit}kcal/天。增加碳水保護肌肉與代謝。`
       : `進度超前！維持每日赤字 ${effectiveDailyDeficit}kcal/天。`
-    message += ` ${deadlineLabel}，目標卡路里 ${actualCalories}kcal。穩穩達標。`
+    message += ` ${deadlineLabel}，目標卡路里 ${actualCalories}kcal。${describeActualPace(input.weeklyWeights, weightToLose, daysLeft)}`
   } else if (shortfall > 50) {
     // Bug fix M5: 只有 shortfall > 50 才顯示「需靠活動補」，避免 1-50 kcal 時說需要活動卻沒給建議
     statusEmoji = '⚠️'
@@ -3720,7 +3752,7 @@ function generateGoalDrivenCut(
   } else if (safetyLevel === 'aggressive') {
     statusEmoji = '🎯'
     message = `目標模式：每日赤字 ${requiredDailyDeficit}kcal（積極），預計每週掉 ${requiredWeeklyLoss.toFixed(2)}kg（${weeklyLossPct.toFixed(1)}% BW）。`
-    message += ` ${deadlineLabel}，目標卡路里 ${actualCalories}kcal。可以達標。`
+    message += ` ${deadlineLabel}，目標卡路里 ${actualCalories}kcal。${describeActualPace(input.weeklyWeights, weightToLose, daysLeft)}`
     warnings.push(`⚡ 赤字已超過一般參考值 500kcal，備賽模式已啟用放寬限制`)
   } else {
     // ⚠️ 2026-09-19：這裡原本印 `requiredDailyDeficit` / `requiredWeeklyLoss` ——
@@ -3736,7 +3768,7 @@ function generateGoalDrivenCut(
     if (cappedDailyDeficit < requiredDailyDeficit) {
       message += ` ⚠️ 達成目標本來需要 ${requiredDailyDeficit}kcal/天（${weeklyLossPct.toFixed(1)}% BW），超過安全上限 ${maxWeeklyLossPct}%，已鎖在上限 —— ${deadlineLabel}，照這個速度到不了，要延時程或改目標體重。`
     } else {
-      message += ` 在安全範圍內，${deadlineLabel}，穩穩達標。`
+      message += ` 在安全範圍內，${deadlineLabel}。${describeActualPace(input.weeklyWeights, weightToLose, daysLeft)}`
     }
   }
 
