@@ -37,6 +37,7 @@ import { lineBudgetAllows, noteLinePushed } from '@/lib/line-budget'
 import { studentExperimentText } from '@/lib/body-experiments'
 import { proposeBodyProfileEntries } from '@/lib/body-profile-miner'
 import { proposeCoachSummaryDrafts } from '@/lib/coach-summary-draft-cron'
+import { proposeTargetDateChanges } from '@/lib/goal-feasibility-cron'
 import { listActionableProposals, sweepExpiredProposals } from '@/lib/proposal-actions'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import {
@@ -849,6 +850,17 @@ export async function GET(request: NextRequest) {
       errors.push(...r.errors.map(e => `body profile: ${e}`))
     } catch (err) {
       errors.push(`body profile: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // ── 目標日到不了（同 goal-safety 的安全速度）→ 起草改目標日提案，晨報列出來，回「套用 X」才寫入 ──
+  if (isMorning) {
+    try {
+      const r = await proposeTargetDateChanges(supabase, today)
+      if (r.proposed > 0) logger.info(`Target date proposals: ${r.proposed}`)
+      errors.push(...r.errors.map(e => `target date: ${e}`))
+    } catch (err) {
+      errors.push(`target date: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 

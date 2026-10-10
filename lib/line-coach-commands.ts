@@ -146,7 +146,7 @@ function previewText(d: CoachingDraft): string {
 
 /** 這筆提案在 LINE 上怎麼講 */
 /** 彼此獨立、不會疊加的提案：同一人多筆可以一個字一起套用 */
-const INDEPENDENT_TYPES = new Set(['body_profile_entry', 'coach_summary_draft'])
+const INDEPENDENT_TYPES = new Set(['body_profile_entry', 'coach_summary_draft', 'target_date_change'])
 
 function proposalLine(p: ProposalRow, name: string): string {
   const age = Math.round((Date.now() - Date.parse(p.proposed_at)) / 86400000)
