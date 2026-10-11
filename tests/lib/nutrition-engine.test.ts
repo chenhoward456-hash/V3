@@ -734,18 +734,34 @@ describe('generateNutritionSuggestion', () => {
       expect(result.warnings.some(w => w.includes('安全上限') || w.includes('安全線'))).toBe(true)
     })
 
-    it('should detect ahead-of-schedule and relax deficit', () => {
+    it('should detect ahead-of-schedule and relax deficit（4 週穩定在掉）', () => {
       const result = generateNutritionSuggestion(makeCutInput({
         targetWeight: 78,
         targetDate: daysFromNow(60),
         bodyFatPct: 15,
         weeklyWeights: [
           { week: 0, avgWeight: 78.5 }, // Already very close!
-          { week: 1, avgWeight: 80 },   // Lost 1.5kg last week = fast
+          { week: 1, avgWeight: 79.2 },
+          { week: 2, avgWeight: 79.9 },
+          { week: 3, avgWeight: 80.6 }, // 4 週每週 -0.7 = fast
         ],
       }))
       expect(result.status).toBe('goal_driven')
       expect(result.warnings.some(w => w.includes('超前'))).toBe(true)
+    })
+
+    it('只有單週大掉（兩週資料）→ 不判超前、不放鬆熱量', () => {
+      const result = generateNutritionSuggestion(makeCutInput({
+        targetWeight: 78,
+        targetDate: daysFromNow(60),
+        bodyFatPct: 15,
+        weeklyWeights: [
+          { week: 0, avgWeight: 78.5 },
+          { week: 1, avgWeight: 80 },   // 單週 -1.5kg，多半含水分
+        ],
+      }))
+      expect(result.status).toBe('goal_driven')
+      expect(result.warnings.some(w => w.includes('超前'))).toBe(false)
     })
 
     it('should calculate cardio/steps when diet deficit insufficient', () => {
