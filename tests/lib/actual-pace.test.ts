@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { describeActualPace } from '@/lib/nutrition-engine'
+import { describeActualPace, multiWeekTrendKg } from '@/lib/nutrition-engine'
 
 const ww = (...avgs: number[]) => avgs.map((avgWeight, week) => ({ week, avgWeight }))
 

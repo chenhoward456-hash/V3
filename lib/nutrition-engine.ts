@@ -3197,23 +3197,28 @@ function generateCutSuggestion(
  * 林宥任「進度超前…穩穩達標」靠的是單一週 -1.23%。系統不能替還沒發生的結果蓋章。
  * 用最近最多 4 個週均值做回歸；不到 3 週就只講計畫，不下結論。
  */
-export function describeActualPace(
-  weeklyWeights: { week: number; avgWeight: number }[],
-  remainingKg: number,
-  daysLeft: number,
-): string {
+/** 最近最多 4 個週均值的回歸斜率（kg/週，負＝在掉）；不到 3 個不同週回 null（單週太吵，不拿來下判斷） */
+export function multiWeekTrendKg(weeklyWeights: { week: number; avgWeight: number }[]): { slope: number; weeks: number } | null {
   const seen = new Set<number>()
   const pts = weeklyWeights
     .filter(w => w.week <= 3 && Number.isFinite(w.avgWeight) && w.avgWeight > 0 && !seen.has(w.week) && seen.add(w.week))
-  if (pts.length < 3 || remainingKg <= 0) return '照這個計畫算得到；實際體重再看 1–2 週才講得準。'
+  if (pts.length < 3) return null
   const xs = pts.map(p => -p.week)
   const mx = xs.reduce((a, b) => a + b, 0) / xs.length
   const my = pts.reduce((a, p) => a + p.avgWeight, 0) / pts.length
   let num = 0, den = 0
   xs.forEach((x, i) => { num += (x - mx) * (pts[i].avgWeight - my); den += (x - mx) ** 2 })
-  if (den === 0) return '照這個計畫算得到；實際體重再看 1–2 週才講得準。'
-  const slope = num / den  // kg/週，負＝在掉
-  const weeks = pts.length
+  return den === 0 ? null : { slope: num / den, weeks: pts.length }
+}
+
+export function describeActualPace(
+  weeklyWeights: { week: number; avgWeight: number }[],
+  remainingKg: number,
+  daysLeft: number,
+): string {
+  const trend = multiWeekTrendKg(weeklyWeights)
+  if (!trend || remainingKg <= 0) return '照這個計畫算得到；實際體重再看 1–2 週才講得準。'
+  const { slope, weeks } = trend
   if (slope > -0.05) return `但近 ${weeks} 週實際體重沒在往下走，照現在的執行到不了目標，要先找出原因。`
   const loss = -slope
   const weeksNeeded = remainingKg / loss
@@ -3284,8 +3289,12 @@ function generateGoalDrivenCut(
   let aheadOfSchedule = false
   let effectiveDailyDeficit = cappedDailyDeficit
 
-  if (weeklyChangeRate < 0) {
-    const actualWeeklyLoss = Math.abs(weeklyChangeRate / 100) * bw
+  // ⚠️ 2026-10-11：原本用 weeklyChangeRate（只有「這週 vs 上週」一個點）判超前就放鬆赤字。
+  // 林宥任單週 -1.23%（含水分波動）就被判超前、赤字放鬆，但他 4 週實際每週只掉 0.44kg、會晚到。
+  // 放鬆熱量是改處方，要用多週回歸；不到 3 週資料就不判超前（照原計畫，不會更激進）。
+  const multiWeek = multiWeekTrendKg(input.weeklyWeights)
+  if (multiWeek && multiWeek.slope < 0) {
+    const actualWeeklyLoss = -multiWeek.slope
     const projectedLoss = actualWeeklyLoss * (daysLeft / 7)
 
     if (projectedLoss > weightToLose * 1.15) {
@@ -3293,7 +3302,7 @@ function generateGoalDrivenCut(
       const idealWeeklyLoss = Math.max(requiredWeeklyLoss, bw * 0.005)
       const idealDailyDeficit = (idealWeeklyLoss * energyDensity) / 7
       effectiveDailyDeficit = Math.round(idealDailyDeficit)
-      warnings.push(`📈 進度超前！照目前速率可減 ${projectedLoss.toFixed(1)}kg（只需 ${weightToLose.toFixed(1)}kg）。已放鬆赤字，增加碳水保護肌肉`)
+      warnings.push(`📈 進度超前！照近 ${multiWeek.weeks} 週速率可減 ${projectedLoss.toFixed(1)}kg（只需 ${weightToLose.toFixed(1)}kg）。已放鬆赤字，增加碳水保護肌肉`)
 
       if (effectiveDailyDeficit <= SAFETY.MAX_DEFICIT_KCAL) {
         safetyLevel = 'normal'
