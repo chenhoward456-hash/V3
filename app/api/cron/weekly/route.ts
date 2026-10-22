@@ -306,6 +306,7 @@ export async function GET(request: NextRequest) {
           trainingDaysPerWeek,
           prepPhase: client.prep_phase || undefined,
           clientMode: (client.client_mode as 'standard' | 'health' | 'bodybuilding' | 'athletic') || undefined,
+          isCompetition: !!client.competition_date,
           coachManaged: client.subscription_tier === 'coached' || client.subscription_tier === 'protocol',
           weighInGapHours: (client as any).weigh_in_gap_hours ?? undefined,
           activityProfile: client.activity_profile || undefined,
