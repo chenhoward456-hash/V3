@@ -2169,7 +2169,15 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
   }
 
   let previewPeakWeekPlan: PeakWeekDay[] | null = null
-  if (input.targetDate) {
+  // ⚠️ 2026-10-22：只有「真的有比賽」才進 Peak Week／賽後恢復。
+  // targetDate 是 competition_date || target_date —— 一般學員的 target_date 只是「計畫到期日」。
+  // 沒擋之前：震宣（standard、target_date 10/25 是續約日）在 10/22 被生出 Peak Week，
+  // 首頁「碳水目標」顯示 410g（充碳日），而他的處方是訓練日 267g；
+  // William（target_date 9/30 已過）則被當成「比賽結束」跑賽後恢復模式。
+  // 沒傳 isCompetition 的呼叫端，用 client_mode 判斷（standard/health 不會有比賽；沒帶 mode 維持舊行為）。
+  const hasRealCompetition = input.isCompetition
+    ?? (input.clientMode !== 'standard' && input.clientMode !== 'health')
+  if (input.targetDate && hasRealCompetition) {
     // 統一使用 UTC+8（台北時區）計算天數，與 todayStr 一致
     const nowTW = new Date(Date.now() + 8 * 60 * 60 * 1000)
     const nowTWDate = new Date(nowTW.toISOString().split('T')[0]) // UTC+8 的午夜

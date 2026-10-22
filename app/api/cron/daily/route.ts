@@ -327,6 +327,7 @@ export async function GET(request: NextRequest) {
           trainingDaysPerWeek,
           prepPhase: c.prep_phase || undefined,
           clientMode: (c.client_mode as any) || undefined,
+          isCompetition: !!c.competition_date,
           weighInGapHours: c.weigh_in_gap_hours ?? undefined,
           activityProfile: c.activity_profile || undefined,
           // #3: 算真實 status（原本硬寫 normal → lab→macro 安全修正全失效）。性別取中文。
