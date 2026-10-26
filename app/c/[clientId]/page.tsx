@@ -1694,7 +1694,8 @@ export default function ClientDashboard() {
                     教練手動設定中{coachOverrideInfo.daysRemaining != null ? `（剩 ${coachOverrideInfo.daysRemaining} 天）` : ''}
                   </span>
                 </div>
-                {coachOverrideInfo.reason && (
+                {/* reason 是教練內部備註（引擎 bug、對話原話），只給教練模式看 */}
+                {isCoachMode && coachOverrideInfo.reason && (
                   <span className="text-[11px] text-amber-500">{coachOverrideInfo.reason}</span>
                 )}
               </div>
