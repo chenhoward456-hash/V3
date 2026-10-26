@@ -66,3 +66,15 @@ describe('Peak Week 只給真的有比賽的人', () => {
     expect(r.peakWeekPlan?.length).toBeGreaterThan(0)
   })
 })
+
+describe('2026-10-26 沒比賽不做 PW 入場體重拆分', () => {
+  it('standard 學員 target_date 還很遠：不出現 prePeakEntryWeight／PW 入場文案', () => {
+    const s = generateNutritionSuggestion(input({ clientMode: 'standard', targetDate: daysFromNow(60), targetWeight: 77 }))
+    expect(s.deadlineInfo?.prePeakEntryWeight).toBeUndefined()
+    expect(JSON.stringify(s)).not.toContain('PW 入場')
+  })
+  it('bodybuilding 真備賽：照樣拆分', () => {
+    const s = generateNutritionSuggestion(input({ clientMode: 'bodybuilding', isCompetition: true, targetDate: daysFromNow(60), targetWeight: 77 }))
+    expect(s.deadlineInfo?.prePeakEntryWeight).toBeDefined()
+  })
+})

@@ -2386,7 +2386,9 @@ export function generateNutritionSuggestion(input: NutritionInput): NutritionSug
     // ⚠️ 不靠脱水達標（Helms P209：脱水去「變乾」無生理根據、天然選手會被弄扁）。
     //   Peak week 晨重的小幅下降主要來自肝醣/腸道排空的自然波動，非刻意水分操作；
     //   脂肪目標仍須靠 peak week 前的減脂達成，這裡只扣一個保守的自然波動量。
-    if (input.prepPhase && input.goalType === 'cut' && daysLeft > 7 && input.clientMode !== 'athletic') {
+    // ⚠️ 2026-10-26：#245 只擋了 Peak Week 階段，這裡的「PW 入場體重」拆分沒擋 ——
+    // 震宣 target_date 延到 12/25 後，學員頁出現「需要每日赤字…才能達到 PW 入場 77.4kg」。沒比賽就沒有 PW。
+    if (hasRealCompetition && input.prepPhase && input.goalType === 'cut' && daysLeft > 7 && input.clientMode !== 'athletic') {
       const waterCutPct = 0.005  // 僅自然肝醣/腸道波動 ~0.5%，非脱水操作
       const peakWeekExpectedLoss = Math.round(thisWeekAvg * waterCutPct * 10) / 10
       const prePeakEntryWeight = Math.round((input.targetWeight! + peakWeekExpectedLoss) * 10) / 10
