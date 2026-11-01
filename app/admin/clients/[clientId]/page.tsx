@@ -10,6 +10,8 @@ import { calcRecommendedStageWeight, type RecommendedStageWeightResult, calculat
 import { minguoToAD, adToMinguo, ageFromBirthYear } from '@/utils/age'
 import { daysUntilDateTW, DAY_MS } from '@/lib/date-utils'
 import { buildBackLoadPlan } from '@/lib/peak-week-templates'
+import { buildTrialLoad, peakFromTrial, TRIAL_VISUAL_LABEL, type TrialLoad, type TrialVisual } from '@/lib/peak-week-trial'
+import ProgressPhotosCard from '@/components/client/ProgressPhotosCard'
 import { getDefaultFeatures, type SubscriptionTier } from '@/lib/tier-defaults'
 import { isCompetitionMode, isHealthMode, ALL_CLIENT_MODES, MODE_LABELS, MODE_CONFIG, BODYBUILDING_PHASE_OPTIONS, ATHLETIC_PHASE_OPTIONS, PHASE_LABELS } from '@/lib/client-mode'
 import LabPanelNotesEditor from './components/LabPanelNotesEditor'
@@ -156,6 +158,8 @@ interface Client {
     }[]
     authoredAt?: string
     authorNote?: string
+    /** 試灌（正式 peak week 前先灌一次峰值量看反應，lib/peak-week-trial.ts） */
+    trialLoad?: TrialLoad | null
   } | null
 
   lab_results: LabResult[]
@@ -189,6 +193,8 @@ export default function ClientEditor() {
   const [peakWeekPlanText, setPeakWeekPlanText] = useState('')
   const [peakWeekParseError, setPeakWeekParseError] = useState('')
   const [loadingPeakDraft, setLoadingPeakDraft] = useState(false)
+  // 學員回報的試灌結果（peak_week_checks），用來算正式峰值建議
+  const [trialReport, setTrialReport] = useState<{ trialResult: TrialVisual | null; suggestedPeak: number | null } | null>(null)
   // 個人 Peak 實測檔案（賽後回填，下次當基準）
   const [showPeakHistoryForm, setShowPeakHistoryForm] = useState(false)
   const emptyPeakRecord = {
@@ -888,9 +894,16 @@ export default function ClientEditor() {
   // 為什麼要有：peak week 最吃教練判斷（學員實測灌多少碳才圓滿、峰值放賽前 2 天還是 1 天、
   // low 是碳循環還是單一值…），通用引擎算不出來。有課表 → 引擎逐日覆寫（只覆寫有填的欄位）。
   const serializePeakWeekPlan = (plan: any): string => {
-    if (!plan?.days?.length) return ''
+    if (!plan?.days?.length && !plan?.trialLoad) return ''
     const lines: string[] = []
     if (plan.authorNote) { lines.push(`備註：${plan.authorNote}`); lines.push('') }
+    if (plan.trialLoad?.date) {
+      const t = plan.trialLoad
+      const [, tm, td] = t.date.split('-')
+      const macro = [`碳${t.carbs}`, t.protein != null ? `蛋${t.protein}` : null, t.fat != null ? `脂${t.fat}` : null].filter(Boolean).join(' ')
+      lines.push(`試灌 ${parseInt(tm)}/${parseInt(td)} | ${macro}${t.coachNote ? ` | 備註：${t.coachNote}` : ''}`)
+      lines.push('')
+    }
     for (const d of plan.days) {
       if (!d?.date) continue
       const [, m, dd] = d.date.split('-')
@@ -924,10 +937,34 @@ export default function ClientEditor() {
       const pad = (s: string) => s.padStart(2, '0')
       const days: any[] = []
       let authorNote = ''
+      let trialLoad: any = null
 
       for (const raw of text.split('\n')) {
         const line = raw.trim()
         if (!line) continue
+
+        // 試灌行：試灌 10/21 | 碳410 蛋190 脂40 | 備註：...
+        const tl = line.match(/^試灌[\s：:]*(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}\/\d{1,2})\s*(.*)$/)
+        if (tl) {
+          let tdate: string
+          if (tl[1].includes('/')) {
+            const [mm, dd] = tl[1].split('/')
+            tdate = `${compYear}-${pad(mm)}-${pad(dd)}`
+          } else {
+            const [yy, mm, dd] = tl[1].split('-')
+            tdate = `${yy}-${pad(mm)}-${pad(dd)}`
+          }
+          const t: any = { date: tdate }
+          for (const part of tl[2].split(/[|｜]/).map(x => x.trim()).filter(Boolean)) {
+            const no = part.match(/^備註[\s：:]+(.+)$/); if (no) { t.coachNote = no[1].trim(); continue }
+            const carb = part.match(/碳\s*(\d+)/); if (carb) t.carbs = parseInt(carb[1])
+            const pro = part.match(/蛋\s*(\d+)/); if (pro) t.protein = parseInt(pro[1])
+            const fat = part.match(/脂\s*(\d+)/); if (fat) t.fat = parseInt(fat[1])
+          }
+          if (!t.carbs) { setPeakWeekParseError('試灌那行要寫碳水，例：試灌 10/21 | 碳410'); return }
+          trialLoad = t
+          continue
+        }
 
         // 頂部備註行（不以日期開頭）
         if (!/^\d/.test(line)) {
@@ -969,13 +1006,14 @@ export default function ClientEditor() {
         days.push(day)
       }
 
-      if (days.length === 0) {
+      if (days.length === 0 && !trialLoad) {
         setPeakWeekParseError('沒有解析到任何一天。每行格式：7/23 Low·訓練日 | 碳236 蛋186 脂50 | 訓練：... | 備註：...')
         return
       }
 
       const plan: any = { days, authoredAt: new Date().toISOString() }
       if (authorNote) plan.authorNote = authorNote
+      if (trialLoad) plan.trialLoad = trialLoad
       updateClient('coach_peak_week_plan', plan)
     } catch {
       setPeakWeekParseError('解析失敗，請檢查格式')
@@ -1021,6 +1059,7 @@ export default function ClientEditor() {
 
       setPeakWeekPlanText(serializePeakWeekPlan({
         days,
+        trialLoad: client?.coach_peak_week_plan?.trialLoad ?? null,
         ...(latestRecord?.peakCarbs
           ? { authorNote: `充碳日已用你的實測量 ${latestRecord.peakCarbs}g（${latestRecord.competitionDate} ${latestRecord.competitionName ?? ''}，結果：${latestRecord.visualResult === 'full_hard' ? '飽而硬' : latestRecord.visualResult === 'spilled' ? '溢出' : '偏扁'}），不是引擎公式值。仍請依當天視覺校準。` }
           : {}),
@@ -1054,7 +1093,13 @@ export default function ClientEditor() {
 
     const bw = latestBodyComp?.weight ?? latestRecord?.bodyWeight ?? 80
     // 峰值：優先用實測量；沒有就用引擎的保守起點（5.0 g/kg 男 / 4.0 g/kg 女）
-    const peakCarbs = latestRecord?.peakCarbs
+    // 這場比賽已經試灌過、學員回報了結果 → 峰值照試灌結果調（最新、最個人的數據）
+    const existingTrial = client.coach_peak_week_plan?.trialLoad ?? null
+    const trialPeak = existingTrial && trialReport?.trialResult
+      ? peakFromTrial(existingTrial.carbs, trialReport.trialResult)
+      : null
+    const peakCarbs = trialPeak
+      ?? latestRecord?.peakCarbs
       ?? Math.round(bw * (client.gender === '女性' ? 4.0 : 5.0))
 
     const days = buildBackLoadPlan({
@@ -1067,12 +1112,31 @@ export default function ClientEditor() {
       trainingPlan: client.training_plan,
     })
 
-    const authorNote = latestRecord?.peakCarbs
+    // 試灌：已排過就保留原本那天；沒排過就預設賽前 11 天、量＝峰值
+    const trialLoad = existingTrial ?? buildTrialLoad({
+      competitionDate: client.competition_date,
+      peakCarbs,
+      protein: client.protein_target ?? undefined,
+      fat: client.fat_target ?? undefined,
+    })
+
+    const authorNote = trialPeak
+      ? `Helms Back-Load 節奏（峰值放賽前 2 天）。峰值 ${peakCarbs}g 來自這次試灌：灌 ${existingTrial!.carbs}g → ${TRIAL_VISUAL_LABEL[trialReport!.trialResult!]}。`
+      : latestRecord?.peakCarbs
       ? `Helms Back-Load 節奏（峰值放賽前 2 天，讓水分有一整晚+一個白天平衡）。峰值 ${peakCarbs}g 來自 ${latestRecord.competitionDate} 的實測（結果：${latestRecord.visualResult === 'full_hard' ? '飽而硬' : latestRecord.visualResult === 'spilled' ? '溢出' : '偏扁'}），不是體重公式。`
       : `Helms Back-Load 節奏。⚠️ 峰值 ${peakCarbs}g 是引擎的保守起點（沒有實測檔案）— 比完賽記得回來補一筆，下次才會準。`
 
-    setPeakWeekPlanText(serializePeakWeekPlan({ days, authorNote }))
+    setPeakWeekPlanText(serializePeakWeekPlan({ days, authorNote, trialLoad }))
   }
+
+  // 讀學員回報的試灌結果（賽前清單那邊按的）
+  useEffect(() => {
+    if (!client?.unique_code || !client.competition_date) return
+    fetch(`/api/peak-week-checks?code=${client.unique_code}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(j => { if (j?.data) setTrialReport({ trialResult: j.data.trialResult, suggestedPeak: j.data.suggestedPeak }) })
+      .catch(() => {})
+  }, [client?.unique_code, client?.competition_date])
 
   // 賽後補一筆實測記錄（下次備賽的基準）
   const addPeakHistoryRecord = () => {
@@ -2671,6 +2735,11 @@ export default function ClientEditor() {
               </div>
             )}
 
+            {/* 進度照片（學員在「進度」分頁上傳；教練這裡看並排比較） */}
+            {client.unique_code && clientId !== 'new' && (
+              <ProgressPhotosCard code={client.unique_code} readOnly />
+            )}
+
             {/* Peak Week 逐日課表（教練自訂，優先於引擎公式） */}
             {client.competition_enabled && client.competition_date && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6">
@@ -2842,6 +2911,33 @@ export default function ClientEditor() {
                       {loadingPeakDraft ? '載入中…' : '載入引擎草稿'}
                     </button>
                   </div>
+                  {/* 試灌狀態：排了沒、學員回報了沒、正式峰值建議 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs text-slate-700">
+                    {client.coach_peak_week_plan?.trialLoad ? (
+                      <>
+                        <p>
+                          <span className="font-semibold">試灌</span>{' '}
+                          <span className="tabular-nums">{client.coach_peak_week_plan.trialLoad.date.slice(5).replace('-', '/')} · 碳 {client.coach_peak_week_plan.trialLoad.carbs}g</span>
+                          {' → '}
+                          {trialReport?.trialResult
+                            ? <strong>{TRIAL_VISUAL_LABEL[trialReport.trialResult]}</strong>
+                            : <span className="text-slate-400">學員還沒回報</span>}
+                        </p>
+                        {trialReport?.suggestedPeak != null && (
+                          <p className="mt-1 text-slate-600">
+                            正式峰值建議 <strong className="tabular-nums">{trialReport.suggestedPeak}g</strong>
+                            。按「套用 Helms Back-Load 節奏」會直接用這個量。
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-slate-500">
+                        還沒排試灌。按「套用 Helms Back-Load 節奏」會自動在賽前 11 天加一天試灌（量＝峰值）；
+                        學員在首頁「賽前清單」回報扁／飽而硬／溢，這裡就會出現正式峰值建議。
+                      </p>
+                    )}
+                  </div>
+
                   <p className="text-[11px] text-gray-400 leading-relaxed -mt-1">
                     <strong>Back-Load 節奏</strong>：Day7-3 照平常碳循環（不壓低）→ Day3 最後一次較重訓練 →
                     <strong> Day2 峰值</strong> → Day1 收到 75% → 賽日看外觀。
@@ -2863,7 +2959,7 @@ export default function ClientEditor() {
                         setPeakWeekParseError('')
                       }}
                       rows={10}
-                      placeholder={`備註：依 Helms Ch.7 節奏，峰值放賽前 2 天\n\n7/23 Low·訓練日 | 碳236 蛋186 脂50 | 訓練：最後一次較重的訓練 | 備註：拍基準照\n7/24 峰值 | 碳440 蛋150 脂40 | 訓練：輕 pump 循環 15-20下 | 備註：晚上看外觀\n7/25 收 | 碳340 | 訓練：全身 pump 含腿 + 狠練 posing | 備註：晚上判讀決定賽日\n7/26 賽日 | 碳300 鈉3000 | 訓練：短 pump（腿只小腿） | 備註：上台前補 2g 鈉`}
+                      placeholder={`備註：依 Helms Ch.7 節奏，峰值放賽前 2 天\n\n試灌 7/15 | 碳440 | 備註：今晚拍照、明早晨重\n\n7/23 Low·訓練日 | 碳236 蛋186 脂50 | 訓練：最後一次較重的訓練 | 備註：拍基準照\n7/24 峰值 | 碳440 蛋150 脂40 | 訓練：輕 pump 循環 15-20下 | 備註：晚上看外觀\n7/25 收 | 碳340 | 訓練：全身 pump 含腿 + 狠練 posing | 備註：晚上判讀決定賽日\n7/26 賽日 | 碳300 鈉3000 | 訓練：短 pump（腿只小腿） | 備註：上台前補 2g 鈉`}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
                     />
                   </div>

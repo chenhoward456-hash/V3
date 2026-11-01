@@ -78,6 +78,8 @@
 幾乎所有表的 `client_id` 都 FK → `clients(id) ON DELETE CASCADE`（刪 client 會連鎖刪光該學員所有資料）。例外：`subscription_purchases.client_id` 是 SET NULL。
 
 ### 核心
+- **progress_photos**（2026-11-01）— 進度照片：client_id(CASCADE)、taken_on、pose(CHECK front/back_lat/side/back)、storage_path（私有 bucket `progress-photos`，只走 service_role＋signed URL）。UNIQUE(client_id, taken_on, pose)：同天同姿勢覆蓋（API 會刪舊檔）。RLS 開、無 policy。
+- **peak_week_checks**（2026-11-01）— 賽前清單勾選＋試灌結果：client_id(CASCADE)、competition_date、item_key（要在 `lib/peak-week-checklist.ts` 的清單裡）、value jsonb（trial_result＝{visual: flat/full_hard/spilled}）。UNIQUE(client_id, competition_date, item_key)；換比賽日期＝新的一份。試灌本身存在 `clients.coach_peak_week_plan.trialLoad`。
 - **decathlon_goals**（2026-09-24）— 百歲十項全能：client_id(CASCADE)、event(2–120 字)、capacity(CHECK strength/cardio/mobility/balance)。RLS 開、無 policy。
 - **fitness_markers**（2026-09-24）— 身體能力指標：client_id(CASCADE)、kind(CHECK vo2max/grip)、date、value(>0)、method(NOT NULL，趨勢只比同量法)、note。RLS 開、無 policy。
 - **body_experiments**（2026-09-30）— 身體實驗：client_id(CASCADE)、title、action、metric(CHECK energy_level/sleep_quality/mood/training_drive/stress_level/hunger/cognitive_clarity/hrv/resting_hr/wearable_sleep_score/device_recovery_score/weight)、start_date/end_date(end>start)、baseline_days(7–60，預設 14)、expected_direction(up/down/stable)、expected_delta(>0 或 NULL)、notified_status（判決不存，`lib/body-experiments.ts` 每次重算）。RLS 開、無 policy。

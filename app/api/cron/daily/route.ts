@@ -25,6 +25,7 @@ import {
   lastCarbIncreaseDate, carbRepletionCutoff, inCarbRepletionWindow,
 } from '@/lib/implied-intake'
 import { sendPushNotification } from '@/lib/web-push'
+import { buildTrialReminder, type TrialLoad } from '@/lib/peak-week-trial'
 import { buildPeakMorningReminder, buildPeakEveningReminder } from '@/lib/peak-week-reminders'
 import { verifyAdminSession } from '@/lib/auth-middleware'
 import { generateSmartAlerts, type InsightData, type ClientProfile } from '@/lib/ai-insights'
@@ -914,6 +915,27 @@ export async function GET(request: NextRequest) {
     }
   } catch (e) {
     errors.push(`peak_week_reminder: ${(e as Error)?.message ?? 'unknown'}`)
+  }
+
+  // ── 試灌提醒（賽前約 11 天；試灌日早晚＋隔天早上回報結果）—— 只走 Web Push，不吃 LINE 額度 ──
+  try {
+    for (const client of clients as Array<{
+      id: string; unique_code?: string; client_mode?: string | null
+      competition_date?: string | null
+      coach_peak_week_plan?: { trialLoad?: TrialLoad | null } | null
+    }>) {
+      const trial = client.coach_peak_week_plan?.trialLoad
+      if (!trial?.date || !client.competition_date || client.client_mode === 'athletic') continue
+      const reminder = buildTrialReminder(trial, today, isMorning ? 'morning' : 'evening')
+      if (!reminder) continue
+      const ok = await sendWebPushOnly(client.id, {
+        ...reminder,
+        url: client.unique_code ? `${siteUrl}/c/${client.unique_code}` : `${siteUrl}/dashboard`,
+      })
+      if (ok) { sent++; webPushUsed++ }
+    }
+  } catch (e) {
+    errors.push(`trial_load_reminder: ${(e as Error)?.message ?? 'unknown'}`)
   }
 
   if (isMorning) {

@@ -63,6 +63,8 @@ import MyPlanSection from '@/components/client/MyPlanSection'
 import MyGoalEditor from '@/components/client/MyGoalEditor'
 import BodyProfileCard from '@/components/client/BodyProfileCard'
 import LongevityCard from '@/components/client/LongevityCard'
+import PrepChecklistCard from '@/components/client/PrepChecklistCard'
+import ProgressPhotosCard from '@/components/client/ProgressPhotosCard'
 import LabConsultCard from '@/components/client/LabConsultCard'
 import HealthWinHero from '@/components/client/HealthWinHero'
 import LongevityTeaser from '@/components/client/LongevityTeaser'
@@ -1384,6 +1386,13 @@ export default function ClientDashboard() {
           )}
           ===== */}
 
+          {/* 賽前清單：比賽前 14 天到比賽日（上色/除毛/試灌/打包…不是吃跟練的那些事） */}
+          {view === 'home' && isToday && isCompetition && c.competition_date && (() => {
+            const dl = daysUntilDateTW(c.competition_date)
+            if (dl < 0 || dl > 14) return null
+            return <SectionErrorBoundary name="prep-checklist"><PrepChecklistCard code={c.unique_code} /></SectionErrorBoundary>
+          })()}
+
           {/* 賽後恢復提示：比賽日期已過但階段仍為 peak_week/competition */}
           {view === 'home' && isCompetition && c.competition_date && (() => {
             const daysLeft = daysUntilDateTW(c.competition_date)
@@ -1499,6 +1508,11 @@ export default function ClientDashboard() {
               currentWeight={latestBodyData?.weight ?? null}
             />
           </div>
+        )}
+
+        {/* 進度照片 — 備賽的裁判是照片；減脂/備賽的人都看得到 */}
+        {view === 'data' && (
+          <SectionErrorBoundary name="progress-photos"><ProgressPhotosCard code={c.unique_code} /></SectionErrorBoundary>
         )}
 
         {/* 推播開通 — 下移到行動/判決卡之後（留存槓桿但不佔第一屏；gated，含 iPhone 加主畫面引導）*/}
