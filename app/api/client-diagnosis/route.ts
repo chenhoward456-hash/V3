@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       // 依從(adherence)：近 14 天飲食記錄。先攻依從、macro 後站——沒在執行就不該動數字。
       supabase
         .from('nutrition_logs')
-        .select('date, compliant, calories')
+        .select('date, compliant, calories, protein_grams')
         .eq('client_id', c.id)
         .gte('date', d14),
     ])
@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
     const allBody = bodyR.data || []
     const body = allBody.filter((b) => b.weight != null)
     const latestWeight = body.length ? Number(body[body.length - 1].weight) : null
+    const latestWeightDate = body.length ? body[body.length - 1].date : null
     // 體脂要從「全部」列找：InBody 那天可能只有體脂、沒填早晨體重（weight=null），
     // 先過濾體重再找會把它丟掉 —— 2026-09-02 問林宥任體脂回「沒紀錄」，其實 8/12 有 26.2%。
     const latestFatRow = [...allBody].reverse().find((b) => b.body_fat != null) ?? null
@@ -172,6 +173,9 @@ export async function GET(request: NextRequest) {
     const avgLoggedCalories = calVals.length ? Math.round(calVals.reduce((a, b) => a + b, 0) / calVals.length) : null
     const calTarget = c.calories_target != null ? Number(c.calories_target) : null
     const calorieGapVsTarget = avgLoggedCalories != null && calTarget ? avgLoggedCalories - calTarget : null
+    const proVals = nut.map((n) => Number(n.protein_grams)).filter((v) => v > 0)
+    const avgLoggedProtein = proVals.length ? Math.round(proVals.reduce((a, b) => a + b, 0) / proVals.length) : null
+    const lastLoggedDate = nut.length ? nut.map((n) => n.date as string).sort().at(-1) ?? null : null
     // 粗略裁定：記錄太少 = 沒在執行(engagement)；有記錄但常超標 = 執行打折；都好才算真執行。
     let adherenceVerdict: string
     if (loggedDays < 4) adherenceVerdict = 'not_tracking' // 14天記不到4天，連追蹤都沒有
@@ -201,6 +205,7 @@ export async function GET(request: NextRequest) {
       dietWeeks,
       // 體組成
       latestWeight,
+      latestWeightDate, // 最後一次量體重的日期（bot 盯學員用：幾天沒量）
       latestBodyFat,
       latestBodyFatDate,
       weightChange14d: weightChange14,
@@ -228,6 +233,8 @@ export async function GET(request: NextRequest) {
         compliantRate,
         avgLoggedCalories,
         calorieGapVsTarget,
+        avgLoggedProtein, // 有記錄那幾天的平均蛋白質(g)
+        lastLoggedDate, // 最後一次記飲食的日期
         verdict: adherenceVerdict,
       },
       // 血檢
